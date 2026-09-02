@@ -2486,188 +2486,423 @@ export default function App() {
               ================================================= */}
 
           {screen === "map" && (
-            <section className="map-screen">
+  <section className="hunting-map-page">
 
-              <div className="page-heading">
-                <div>
-                  <span className="carnet-eyebrow">
-                    MES POSITIONS
-                  </span>
+    <div className="hunting-map-heading">
 
-                  <h1>
-                    Ma carte
-                  </h1>
+      <div>
+        <span className="carnet-eyebrow">
+          MES POSITIONS
+        </span>
 
-                  <p>
-                    Retrouve tes
-                    journées
-                    géolocalisées.
-                  </p>
-                </div>
-              </div>
+        <h1>
+          Ma carte
+        </h1>
+
+        <p>
+          {
+            trips.filter(
+              (trip) =>
+                trip.latitude != null &&
+                trip.longitude != null
+            ).length
+          }{" "}
+          {trips.filter(
+            (trip) =>
+              trip.latitude != null &&
+              trip.longitude != null
+          ).length > 1
+            ? "sorties géolocalisées"
+            : "sortie géolocalisée"}
+        </p>
+      </div>
+
+      <div className="hunting-map-heading-icon">
+        <MapIcon
+          size={28}
+          strokeWidth={1.7}
+        />
+      </div>
+
+    </div>
 
 
-              <button
-                type="button"
-                className="primary-button"
-                onClick={
-                  findMeOnMap
-                }
-              >
-                <MapPin
-                  size={19}
-                />
+    <section className="hunting-map-card">
 
-                {locatingOnMap
-                  ? "Localisation..."
-                  : "Ma position"}
-              </button>
+      <div className="hunting-map-card-top">
+
+        <div>
+          <span>
+            CARTE DE MES SORTIES
+          </span>
+
+          <strong>
+            Tes journées enregistrées
+          </strong>
+        </div>
+
+        <button
+          type="button"
+          className="hunting-map-location-button"
+          onClick={findMeOnMap}
+          disabled={locatingOnMap}
+        >
+          <Crosshair
+            size={19}
+            strokeWidth={2}
+          />
+
+          {locatingOnMap
+            ? "Localisation..."
+            : "Ma position"}
+        </button>
+
+      </div>
 
 
-              <div className="map-wrapper">
+      {trips.filter(
+        (trip) =>
+          trip.latitude != null &&
+          trip.longitude != null
+      ).length === 0 &&
+      !userPosition ? (
 
-                <MapContainer
-                  center={[
-                    47.2,
-                    -0.5,
+        <div className="hunting-map-empty">
+
+          <div className="hunting-map-empty-icon">
+            <MapPin
+              size={34}
+              strokeWidth={1.7}
+            />
+          </div>
+
+          <strong>
+            Aucune sortie géolocalisée
+          </strong>
+
+          <p>
+            Ajoute une position GPS à une
+            sortie pour la retrouver ici
+            sur la carte.
+          </p>
+
+          <button
+            type="button"
+            onClick={newTrip}
+          >
+            <Plus
+              size={19}
+            />
+
+            Nouvelle sortie
+          </button>
+
+        </div>
+
+      ) : (
+
+        <div className="hunting-map-wrapper">
+
+          <MapContainer
+            center={[
+              47.2,
+              -0.5,
+            ]}
+            zoom={8}
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+          >
+
+            <TileLayer
+              attribution='&copy; OpenStreetMap contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+
+
+            <MapAutoFit
+              trips={trips}
+              userPosition={
+                userPosition
+              }
+            />
+
+
+            {trips
+              .filter(
+                (trip) =>
+                  trip.latitude != null &&
+                  trip.longitude != null
+              )
+              .map((trip) => (
+
+                <Marker
+                  key={trip.id}
+                  position={[
+                    trip.latitude as number,
+                    trip.longitude as number,
                   ]}
-                  zoom={8}
-                  style={{
-                    width: "100%",
-                    height: "460px",
-                  }}
                 >
 
-                  <TileLayer
-                    attribution='&copy; OpenStreetMap contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
+                  <Popup>
+
+                    <article className="hunting-map-popup">
+
+                      <div className="hunting-map-popup-top">
+
+                        <div className="hunting-map-popup-icon">
+                          <MapPin
+                            size={20}
+                          />
+                        </div>
+
+                        <div>
+                          <span>
+                            {
+                              trip.huntType
+                            }
+                          </span>
+
+                          <h3>
+                            {
+                              trip.territory
+                            }
+                          </h3>
+                        </div>
+
+                      </div>
 
 
-                  <MapAutoFit
-                    trips={trips}
-                    userPosition={
-                      userPosition
-                    }
-                  />
+                      <div className="hunting-map-popup-date">
 
+                        <CalendarDays
+                          size={16}
+                        />
 
-                  {trips
-                    .filter(
-                      (trip) =>
-                        trip.latitude !=
-                          null &&
-                        trip.longitude !=
-                          null
-                    )
-                    .map(
-                      (trip) => (
-                        <Marker
-                          key={
-                            trip.id
+                        {new Date(
+                          trip.date +
+                            "T12:00:00"
+                        ).toLocaleDateString(
+                          "fr-FR",
+                          {
+                            weekday:
+                              "long",
+
+                            day:
+                              "numeric",
+
+                            month:
+                              "long",
+
+                            year:
+                              "numeric",
                           }
-                          position={[
-                            trip.latitude as number,
-                            trip.longitude as number,
-                          ]}
-                        >
-                          <Popup>
-                            <div className="map-popup">
+                        )}
 
-                              <strong>
-                                {
-                                  trip.territory
-                                }
-                              </strong>
+                      </div>
 
-                              <p>
-                                {new Date(
-                                  trip.date +
-                                    "T12:00:00"
-                                ).toLocaleDateString(
-                                  "fr-FR"
-                                )}
-                              </p>
 
-                              <p>
-                                {
-                                  trip.huntType
-                                }
-                              </p>
+                      <div className="hunting-map-popup-info">
 
-                              <p>
-                                <b>
-                                  Prélèvements :
-                                </b>{" "}
+                        <div>
 
-                                {trip
-                                  .harvests
-                                  .length
-                                  ? trip.harvests
-                                      .map(
-                                        (
-                                          harvest
-                                        ) =>
-                                          `${harvest.species} ×${harvest.quantity}`
-                                      )
-                                      .join(
-                                        ", "
-                                      )
-                                  : "Aucun"}
-                              </p>
+                          <Target
+                            size={17}
+                          />
 
-                              <p>
-                                <b>
-                                  Chiens :
-                                </b>{" "}
+                          <span>
+                            <small>
+                              Prélèvements
+                            </small>
 
-                                {trip
-                                  .dogs
-                                  .length
-                                  ? trip.dogs.join(
+                            <strong>
+                              {trip.harvests
+                                .length > 0
+                                ? trip.harvests
+                                    .map(
+                                      (
+                                        harvest
+                                      ) =>
+                                        `${harvest.species} ×${harvest.quantity}`
+                                    )
+                                    .join(
                                       ", "
                                     )
-                                  : "Aucun"}
-                              </p>
+                                : "Aucun"}
+                            </strong>
+                          </span>
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  editTrip(
-                                    trip
+                        </div>
+
+
+                        <div>
+
+                          <Dog
+                            size={17}
+                          />
+
+                          <span>
+                            <small>
+                              Chiens
+                            </small>
+
+                            <strong>
+                              {trip.dogs
+                                .length > 0
+                                ? trip.dogs.join(
+                                    ", "
                                   )
-                                }
-                              >
-                                Modifier
-                              </button>
+                                : "Aucun"}
+                            </strong>
+                          </span>
 
-                            </div>
-                          </Popup>
-                        </Marker>
-                      )
-                    )}
+                        </div>
+
+                      </div>
 
 
-                  {userPosition && (
-                    <CircleMarker
-                      center={[
-                        userPosition.latitude,
-                        userPosition.longitude,
-                      ]}
-                      radius={9}
-                    >
-                      <Popup>
-                        Ma position
-                      </Popup>
-                    </CircleMarker>
-                  )}
+                      {trip.notes && (
 
-                </MapContainer>
+                        <div className="hunting-map-popup-notes">
+                          {
+                            trip.notes
+                          }
+                        </div>
 
+                      )}
+
+
+                      <button
+                        type="button"
+                        className="hunting-map-popup-edit"
+                        onClick={() =>
+                          editTrip(
+                            trip
+                          )
+                        }
+                      >
+                        <Pencil
+                          size={16}
+                        />
+
+                        Modifier cette sortie
+                      </button>
+
+                    </article>
+
+                  </Popup>
+
+                </Marker>
+
+              ))}
+
+
+            {userPosition && (
+
+              <CircleMarker
+                center={[
+                  userPosition.latitude,
+                  userPosition.longitude,
+                ]}
+                radius={9}
+                pathOptions={{
+                  color: "#ffffff",
+                  weight: 3,
+                  fillColor:
+                    "#24583d",
+                  fillOpacity: 1,
+                }}
+              >
+
+                <Popup>
+                  <div className="hunting-map-user-popup">
+                    <Crosshair
+                      size={17}
+                    />
+
+                    Ma position
+                  </div>
+                </Popup>
+
+              </CircleMarker>
+
+            )}
+
+          </MapContainer>
+
+
+          <div className="hunting-map-legend">
+
+            <div>
+              <span className="hunting-map-dot trip" />
+
+              Sortie de chasse
+            </div>
+
+            {userPosition && (
+              <div>
+                <span className="hunting-map-dot user" />
+
+                Ma position
               </div>
-            </section>
-          )}
+            )}
 
+          </div>
+
+        </div>
+
+      )}
+
+    </section>
+
+
+    <section className="hunting-map-summary">
+
+      <div>
+
+        <div className="hunting-map-summary-icon">
+          <MapPin
+            size={21}
+          />
+        </div>
+
+        <span>
+          <strong>
+            {
+              trips.filter(
+                (trip) =>
+                  trip.latitude != null &&
+                  trip.longitude != null
+              ).length
+            }
+          </strong>
+
+          Positions enregistrées
+        </span>
+
+      </div>
+
+
+      <button
+        type="button"
+        onClick={() =>
+          setScreen(
+            "carnet"
+          )
+        }
+      >
+        Voir mon carnet
+
+        <ChevronRight
+          size={18}
+        />
+      </button>
+
+    </section>
+
+  </section>
+)}
 
           {/* =================================================
               STATISTIQUES
