@@ -3230,11 +3230,11 @@ export default function App() {
             ================================================= */}
 
         {showForm && (
-          <div className="modal-overlay">
+          <div className="trip-form-overlay">
 
-            <section className="modal">
+            <section className="trip-form-sheet">
 
-              <div className="modal-header">
+              <div className="trip-form-header">
 
                 <div>
                   <small>
@@ -3250,7 +3250,7 @@ export default function App() {
 
                 <button
                   type="button"
-                  className="modal-close"
+                  className="trip-form-close"
                   onClick={
                     closeForm
                   }
@@ -3643,7 +3643,7 @@ export default function App() {
 
               {/* ACTIONS */}
 
-              <div className="modal-actions">
+              <div className="trip-form-actions">
 
                 <button
                   type="button"

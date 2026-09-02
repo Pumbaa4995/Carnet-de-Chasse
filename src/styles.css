@@ -3179,3 +3179,421 @@ button {
       1fr !important;
   }
 }
+
+/* =====================================================
+   FORMULAIRE SORTIE — VERSION MOBILE PROPRE
+   ===================================================== */
+
+.trip-form-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  background: rgba(18, 35, 26, 0.52);
+
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+
+/* PANNEAU */
+
+.trip-form-sheet {
+  box-sizing: border-box;
+
+  width: 100%;
+  max-width: 600px;
+  max-height: 92dvh;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  padding:
+    22px
+    18px
+    calc(25px + env(safe-area-inset-bottom));
+
+  border-radius: 28px 28px 0 0;
+
+  background: #fffdf7;
+
+  box-shadow:
+    0 -15px 45px
+    rgba(15, 35, 24, 0.22);
+
+  -webkit-overflow-scrolling: touch;
+}
+
+
+/* HEADER */
+
+.trip-form-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin-bottom: 24px;
+}
+
+.trip-form-header > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.trip-form-header small {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #8a7048;
+
+  font-size: 0.68rem;
+  font-weight: 800;
+
+  letter-spacing: 1.1px;
+}
+
+.trip-form-header h2 {
+  margin: 0;
+
+  color: #173c2a;
+
+  font-family: Georgia, serif;
+  font-size: 1.55rem;
+}
+
+.trip-form-close {
+  width: 42px;
+  height: 42px;
+
+  flex: 0 0 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 1px solid #deddd4;
+  border-radius: 50%;
+
+  background: #f3f0e7;
+  color: #234a35;
+}
+
+
+/* GROUPES */
+
+.trip-form-sheet .form-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  width: 100%;
+  min-width: 0;
+
+  gap: 8px;
+
+  margin: 0 0 19px;
+}
+
+.trip-form-sheet .form-group > label {
+  display: block;
+
+  margin: 0;
+
+  color: #30483a;
+
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+
+/* CHAMPS */
+
+.trip-form-sheet input,
+.trip-form-sheet select,
+.trip-form-sheet textarea {
+  box-sizing: border-box;
+
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  border: 1px solid #d8ddd5;
+  border-radius: 14px;
+
+  outline: none;
+
+  background: #ffffff;
+  color: #25392d;
+
+  font: inherit;
+  font-size: 16px;
+}
+
+.trip-form-sheet input,
+.trip-form-sheet select {
+  min-height: 50px;
+
+  padding: 0 13px;
+}
+
+.trip-form-sheet textarea {
+  min-height: 110px;
+
+  padding: 13px;
+
+  resize: vertical;
+}
+
+.trip-form-sheet input:focus,
+.trip-form-sheet select:focus,
+.trip-form-sheet textarea:focus {
+  border-color: #557a62;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(36, 82, 57, 0.08);
+}
+
+
+/* GPS */
+
+.trip-form-sheet .gps-button {
+  width: 100%;
+  min-height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  padding: 10px 14px;
+
+  border: 1px solid #cfd9cf;
+  border-radius: 14px;
+
+  background: #e8eee5;
+  color: #214a34;
+
+  font-weight: 700;
+}
+
+.trip-form-sheet .gps-saved {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+
+  gap: 10px;
+
+  box-sizing: border-box;
+
+  padding: 12px;
+
+  border-radius: 14px;
+
+  background: #e8eee5;
+}
+
+.trip-form-sheet .gps-saved > div {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+}
+
+
+/* PRÉLÈVEMENTS */
+
+.trip-form-sheet .harvest-form {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    65px
+    50px;
+
+  width: 100%;
+
+  gap: 8px;
+}
+
+.trip-form-sheet .harvest-form select,
+.trip-form-sheet .harvest-form input {
+  width: 100%;
+  min-width: 0;
+}
+
+.trip-form-sheet .harvest-form button {
+  width: 50px;
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 14px;
+
+  background: #225239;
+  color: #fff;
+}
+
+
+/* PRÉLÈVEMENTS AJOUTÉS */
+
+.trip-form-sheet .harvest-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+
+  margin-top: 8px;
+}
+
+.trip-form-sheet .harvest-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  box-sizing: border-box;
+
+  width: 100%;
+
+  padding: 10px 12px;
+
+  border-radius: 12px;
+
+  background: #f2efe5;
+}
+
+.trip-form-sheet .harvest-item button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 5px;
+
+  border: 0;
+
+  background: transparent;
+  color: #9a5047;
+}
+
+
+/* CHIENS */
+
+.trip-form-sheet .dog-grid {
+  display: flex;
+  flex-wrap: wrap;
+
+  width: 100%;
+
+  gap: 8px;
+}
+
+.trip-form-sheet .dog-chip {
+  width: auto;
+  min-width: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+
+  padding: 9px 12px;
+
+  border: 1px solid #d8ddd5;
+  border-radius: 50px;
+
+  background: #f8f6ef;
+  color: #45574c;
+
+  font-size: 0.78rem;
+  font-weight: 650;
+
+  white-space: nowrap;
+}
+
+.trip-form-sheet .dog-chip.selected {
+  border-color: #24563b;
+
+  background: #24563b;
+  color: #fff;
+}
+
+
+/* ACTIONS */
+
+.trip-form-actions {
+  display: grid;
+
+  grid-template-columns: 1fr 1.4fr;
+
+  gap: 10px;
+
+  margin-top: 25px;
+}
+
+.trip-form-actions button {
+  width: 100%;
+  min-width: 0;
+  min-height: 51px;
+
+  border-radius: 14px;
+
+  font-weight: 750;
+}
+
+.trip-form-actions .secondary-button {
+  border: 1px solid #d8ddd5;
+
+  background: #f4f1e8;
+  color: #44534a;
+}
+
+.trip-form-actions .primary-button {
+  border: 0;
+
+  background: #1e5138;
+  color: #fff;
+}
+
+
+/* IPHONE */
+
+@media (max-width: 500px) {
+
+  .trip-form-sheet {
+    max-height: 94dvh;
+
+    padding:
+      20px
+      16px
+      calc(
+        22px +
+        env(safe-area-inset-bottom)
+      );
+  }
+
+  .trip-form-header h2 {
+    font-size: 1.4rem;
+  }
+
+  .trip-form-actions {
+    grid-template-columns: 1fr;
+  }
+}
