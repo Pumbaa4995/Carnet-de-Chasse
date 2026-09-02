@@ -3597,3 +3597,491 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* =====================================================
+   STATISTIQUES DE CHASSE
+   ===================================================== */
+
+.hunting-stats-page {
+  width: 100%;
+}
+
+
+/* TITRE */
+
+.hunting-stats-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 20px;
+}
+
+.hunting-stats-heading h1 {
+  margin: 4px 0 5px;
+
+  color: #173c2a;
+
+  font-family: Georgia, serif;
+  font-size: 1.85rem;
+
+  letter-spacing: -0.4px;
+}
+
+.hunting-stats-heading p {
+  margin: 0;
+
+  color: #718078;
+
+  font-size: 0.85rem;
+}
+
+.hunting-stats-heading-icon {
+  width: 52px;
+  height: 52px;
+
+  flex: 0 0 52px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 17px;
+
+  background: #e3eadf;
+  color: #234f37;
+}
+
+
+/* CHIFFRES PRINCIPAUX */
+
+.hunting-stats-main-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 11px;
+
+  margin-bottom: 27px;
+}
+
+.hunting-stats-main-card {
+  position: relative;
+
+  min-width: 0;
+
+  padding: 15px;
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    rgba(40, 88, 61, 0.08);
+
+  border-radius: 19px;
+
+  background: #fffdf8;
+
+  box-shadow:
+    0 7px 22px
+    rgba(30, 55, 40, 0.07);
+}
+
+.hunting-stats-main-card.brown {
+  background: #f7f3ea;
+}
+
+.hunting-stats-main-icon {
+  width: 39px;
+  height: 39px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 12px;
+
+  border-radius: 12px;
+
+  background: #e3eadf;
+  color: #28583d;
+}
+
+.hunting-stats-main-card.brown
+.hunting-stats-main-icon {
+  background: #ede4d5;
+  color: #795f40;
+}
+
+.hunting-stats-main-card > div:nth-child(2) {
+  display: flex;
+  align-items: baseline;
+
+  gap: 6px;
+}
+
+.hunting-stats-main-card strong {
+  color: #183d2b;
+
+  font-family: Georgia, serif;
+  font-size: 1.7rem;
+}
+
+.hunting-stats-main-card
+> div:nth-child(2)
+span {
+  color: #52645a;
+
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.hunting-stats-main-card > small {
+  display: block;
+
+  margin-top: 4px;
+
+  color: #8a958f;
+
+  font-size: 0.64rem;
+}
+
+
+/* TITRES SECTIONS */
+
+.hunting-stats-section-title {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 10px;
+
+  margin: 3px 2px 12px;
+}
+
+.hunting-stats-section-title span {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #846f4b;
+
+  font-size: 0.62rem;
+  font-weight: 850;
+
+  letter-spacing: 1px;
+}
+
+.hunting-stats-section-title h2 {
+  margin: 0;
+
+  color: #244433;
+
+  font-family: Georgia, serif;
+  font-size: 1.12rem;
+}
+
+.hunting-stats-section-title > svg {
+  color: #78907e;
+}
+
+.hunting-stats-section-title.ranking {
+  margin-top: 28px;
+}
+
+
+/* FAVORIS */
+
+.hunting-stats-favorites {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 9px;
+}
+
+.hunting-stats-favorites article {
+  min-width: 0;
+
+  padding: 13px 11px;
+
+  border:
+    1px solid
+    rgba(40, 88, 61, 0.08);
+
+  border-radius: 17px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fffdf8,
+      #f5f2e8
+    );
+}
+
+.hunting-stats-favorite-icon {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 11px;
+
+  border-radius: 11px;
+
+  background: #e1e9df;
+  color: #28583d;
+}
+
+.hunting-stats-favorites small {
+  display: block;
+
+  min-height: 30px;
+
+  margin-bottom: 5px;
+
+  color: #89948d;
+
+  font-size: 0.59rem;
+  line-height: 1.25;
+}
+
+.hunting-stats-favorites strong {
+  display: block;
+
+  overflow: hidden;
+
+  color: #264534;
+
+  font-family: Georgia, serif;
+  font-size: 0.95rem;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hunting-stats-favorites span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #7b867f;
+
+  font-size: 0.6rem;
+}
+
+
+/* CARTES CLASSEMENTS */
+
+.hunting-stats-ranking-card {
+  margin-bottom: 13px;
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    rgba(40, 88, 61, 0.08);
+
+  border-radius: 19px;
+
+  background: #fffdf8;
+
+  box-shadow:
+    0 6px 22px
+    rgba(30, 55, 40, 0.055);
+}
+
+.hunting-stats-ranking-header {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  padding: 14px 15px;
+
+  border-bottom:
+    1px solid #ebe8df;
+}
+
+.hunting-stats-ranking-icon {
+  width: 39px;
+  height: 39px;
+
+  flex: 0 0 39px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: #e3eadf;
+  color: #28583d;
+}
+
+.hunting-stats-ranking-header strong {
+  display: block;
+
+  margin-bottom: 2px;
+
+  color: #284636;
+
+  font-size: 0.82rem;
+}
+
+.hunting-stats-ranking-header span {
+  display: block;
+
+  color: #89948d;
+
+  font-size: 0.64rem;
+}
+
+
+/* LISTES */
+
+.hunting-stats-ranking-list {
+  padding: 3px 15px 6px;
+}
+
+.hunting-stats-ranking-row {
+  min-height: 48px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  border-bottom:
+    1px solid #eeece6;
+}
+
+.hunting-stats-ranking-row:last-child {
+  border-bottom: 0;
+}
+
+.hunting-stats-rank-number {
+  width: 27px;
+  height: 27px;
+
+  flex: 0 0 27px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  background: #edf1e9;
+  color: #4e6858;
+
+  font-size: 0.67rem;
+  font-weight: 850;
+}
+
+.hunting-stats-ranking-row:first-child
+.hunting-stats-rank-number {
+  background: #dce7da;
+  color: #215139;
+}
+
+.hunting-stats-rank-name {
+  min-width: 0;
+
+  flex: 1;
+
+  overflow: hidden;
+
+  color: #405448;
+
+  font-size: 0.76rem;
+  font-weight: 650;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hunting-stats-ranking-row > strong {
+  min-width: 34px;
+
+  padding: 5px 8px;
+
+  border-radius: 9px;
+
+  background: #f1eee5;
+  color: #284c37;
+
+  text-align: center;
+
+  font-size: 0.73rem;
+}
+
+
+/* AUCUNE DONNÉE */
+
+.hunting-stats-no-data {
+  padding: 22px 5px;
+
+  color: #89948d;
+
+  text-align: center;
+
+  font-size: 0.73rem;
+}
+
+
+/* IPHONE */
+
+@media (max-width: 500px) {
+
+  .hunting-stats-main-card {
+    padding: 13px;
+  }
+
+  .hunting-stats-main-card strong {
+    font-size: 1.55rem;
+  }
+
+  .hunting-stats-favorites {
+    grid-template-columns: 1fr;
+  }
+
+  .hunting-stats-favorites article {
+    display: grid;
+
+    grid-template-columns:
+      40px
+      minmax(0, 1fr);
+
+    column-gap: 10px;
+
+    align-items: center;
+  }
+
+  .hunting-stats-favorite-icon {
+    grid-row: 1 / 4;
+
+    margin: 0;
+  }
+
+  .hunting-stats-favorites small {
+    min-height: 0;
+
+    margin: 0;
+  }
+
+  .hunting-stats-favorites strong {
+    margin-top: 2px;
+  }
+
+  .hunting-stats-favorites span {
+    margin-top: 1px;
+  }
+
+}

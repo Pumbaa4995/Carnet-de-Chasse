@@ -2908,190 +2908,532 @@ export default function App() {
               STATISTIQUES
               ================================================= */}
 
-          {screen ===
-            "stats" && (
-            <section className="stats-screen">
+          {screen === "stats" && (
+  <section className="hunting-stats-page">
 
-              <div className="page-heading">
-                <span className="carnet-eyebrow">
-                  MA SAISON
+    <div className="hunting-stats-heading">
+
+      <div>
+        <span className="carnet-eyebrow">
+          MA SAISON
+        </span>
+
+        <h1>
+          Statistiques
+        </h1>
+
+        <p>
+          Le résumé complet de ta saison de chasse.
+        </p>
+      </div>
+
+      <div className="hunting-stats-heading-icon">
+        <BarChart3
+          size={28}
+          strokeWidth={1.8}
+        />
+      </div>
+
+    </div>
+
+
+    {/* CHIFFRES PRINCIPAUX */}
+
+    <section className="hunting-stats-main-grid">
+
+      <article className="hunting-stats-main-card">
+
+        <div className="hunting-stats-main-icon">
+          <BookOpen
+            size={23}
+          />
+        </div>
+
+        <div>
+          <strong>
+            {trips.length}
+          </strong>
+
+          <span>
+            Sorties
+          </span>
+        </div>
+
+        <small>
+          Journées enregistrées
+        </small>
+
+      </article>
+
+
+      <article className="hunting-stats-main-card brown">
+
+        <div className="hunting-stats-main-icon">
+          <Target
+            size={23}
+          />
+        </div>
+
+        <div>
+          <strong>
+            {totalHarvests}
+          </strong>
+
+          <span>
+            Prélèvements
+          </span>
+        </div>
+
+        <small>
+          Sur l'ensemble de la saison
+        </small>
+
+      </article>
+
+
+      <article className="hunting-stats-main-card">
+
+        <div className="hunting-stats-main-icon">
+          <Dog
+            size={23}
+          />
+        </div>
+
+        <div>
+          <strong>
+            {dogStats.length}
+          </strong>
+
+          <span>
+            Chiens
+          </span>
+        </div>
+
+        <small>
+          Chiens utilisés
+        </small>
+
+      </article>
+
+
+      <article className="hunting-stats-main-card brown">
+
+        <div className="hunting-stats-main-icon">
+          <MapPin
+            size={23}
+          />
+        </div>
+
+        <div>
+          <strong>
+            {territoryStats.length}
+          </strong>
+
+          <span>
+            Territoires
+          </span>
+        </div>
+
+        <small>
+          Lieux de chasse différents
+        </small>
+
+      </article>
+
+    </section>
+
+
+    {/* FAVORIS */}
+
+    <div className="hunting-stats-section-title">
+
+      <div>
+        <span>
+          LES FAVORIS
+        </span>
+
+        <h2>
+          Ma saison en un coup d'œil
+        </h2>
+      </div>
+
+      <TreePine
+        size={26}
+        strokeWidth={1.5}
+      />
+
+    </div>
+
+
+    <section className="hunting-stats-favorites">
+
+      <article>
+
+        <div className="hunting-stats-favorite-icon">
+          <Target
+            size={21}
+          />
+        </div>
+
+        <small>
+          Espèce la + prélevée
+        </small>
+
+        <strong>
+          {favoriteSpecies?.name || "—"}
+        </strong>
+
+        <span>
+          {favoriteSpecies
+            ? `${favoriteSpecies.count} prélèvement${
+                favoriteSpecies.count > 1
+                  ? "s"
+                  : ""
+              }`
+            : "Aucune donnée"}
+        </span>
+
+      </article>
+
+
+      <article>
+
+        <div className="hunting-stats-favorite-icon">
+          <Dog
+            size={21}
+          />
+        </div>
+
+        <small>
+          Chien le + utilisé
+        </small>
+
+        <strong>
+          {favoriteDog?.name || "—"}
+        </strong>
+
+        <span>
+          {favoriteDog
+            ? `${favoriteDog.count} sortie${
+                favoriteDog.count > 1
+                  ? "s"
+                  : ""
+              }`
+            : "Aucune donnée"}
+        </span>
+
+      </article>
+
+
+      <article>
+
+        <div className="hunting-stats-favorite-icon">
+          <MapPin
+            size={21}
+          />
+        </div>
+
+        <small>
+          Territoire favori
+        </small>
+
+        <strong>
+          {favoriteTerritory?.name || "—"}
+        </strong>
+
+        <span>
+          {favoriteTerritory
+            ? `${favoriteTerritory.count} sortie${
+                favoriteTerritory.count > 1
+                  ? "s"
+                  : ""
+              }`
+            : "Aucune donnée"}
+        </span>
+
+      </article>
+
+    </section>
+
+
+    {/* CLASSEMENTS */}
+
+    <div className="hunting-stats-section-title ranking">
+
+      <div>
+        <span>
+          CLASSEMENTS
+        </span>
+
+        <h2>
+          Les chiffres de ma saison
+        </h2>
+      </div>
+
+    </div>
+
+
+    <section className="hunting-stats-ranking-card">
+
+      <div className="hunting-stats-ranking-header">
+
+        <div className="hunting-stats-ranking-icon">
+          <Target
+            size={21}
+          />
+        </div>
+
+        <div>
+          <strong>
+            Prélèvements par espèce
+          </strong>
+
+          <span>
+            Total par gibier
+          </span>
+        </div>
+
+      </div>
+
+
+      <div className="hunting-stats-ranking-list">
+
+        {speciesStats.length === 0 ? (
+
+          <div className="hunting-stats-no-data">
+            Aucun prélèvement enregistré.
+          </div>
+
+        ) : (
+
+          speciesStats.map(
+            (item, index) => (
+
+              <div
+                className="hunting-stats-ranking-row"
+                key={item.name}
+              >
+
+                <div className="hunting-stats-rank-number">
+                  {index + 1}
+                </div>
+
+                <span className="hunting-stats-rank-name">
+                  {item.name}
                 </span>
 
-                <h1>
-                  Statistiques
-                </h1>
-
-                <p>
-                  Vue d'ensemble
-                  de ton carnet.
-                </p>
-              </div>
-
-
-              <div className="stats-grid">
-
-                <div className="stat-card">
-                  <BookOpen
-                    size={24}
-                  />
-
-                  <strong>
-                    {trips.length}
-                  </strong>
-
-                  <small>
-                    Sorties
-                  </small>
-                </div>
-
-
-                <div className="stat-card">
-                  <Target
-                    size={24}
-                  />
-
-                  <strong>
-                    {
-                      totalHarvests
-                    }
-                  </strong>
-
-                  <small>
-                    Prélèvements
-                  </small>
-                </div>
-
-
-                <div className="stat-card">
-                  <Dog
-                    size={24}
-                  />
-
-                  <strong>
-                    {
-                      dogStats.length
-                    }
-                  </strong>
-
-                  <small>
-                    Chiens utilisés
-                  </small>
-                </div>
-
-
-                <div className="stat-card">
-                  <MapPin
-                    size={24}
-                  />
-
-                  <strong>
-                    {
-                      territoryStats.length
-                    }
-                  </strong>
-
-                  <small>
-                    Territoires
-                  </small>
-                </div>
+                <strong>
+                  {item.count}
+                </strong>
 
               </div>
 
+            )
+          )
 
-              <div className="stats-highlight-grid">
+        )}
 
-                <div className="stats-highlight">
-                  <small>
-                    Espèce la +
-                    prélevée
-                  </small>
+      </div>
 
-                  <strong>
-                    {favoriteSpecies
-                      ?.name ||
-                      "—"}
-                  </strong>
+    </section>
 
-                  <span>
-                    {favoriteSpecies
-                      ? `${favoriteSpecies.count} prélèvement(s)`
-                      : ""}
-                  </span>
+
+    <section className="hunting-stats-ranking-card">
+
+      <div className="hunting-stats-ranking-header">
+
+        <div className="hunting-stats-ranking-icon">
+          <Dog
+            size={21}
+          />
+        </div>
+
+        <div>
+          <strong>
+            Sorties par chien
+          </strong>
+
+          <span>
+            Nombre de journées
+          </span>
+        </div>
+
+      </div>
+
+
+      <div className="hunting-stats-ranking-list">
+
+        {dogStats.length === 0 ? (
+
+          <div className="hunting-stats-no-data">
+            Aucun chien enregistré dans les sorties.
+          </div>
+
+        ) : (
+
+          dogStats.map(
+            (item, index) => (
+
+              <div
+                className="hunting-stats-ranking-row"
+                key={item.name}
+              >
+
+                <div className="hunting-stats-rank-number">
+                  {index + 1}
                 </div>
 
+                <span className="hunting-stats-rank-name">
+                  {item.name}
+                </span>
 
-                <div className="stats-highlight">
-                  <small>
-                    Chien le +
-                    utilisé
-                  </small>
-
-                  <strong>
-                    {favoriteDog
-                      ?.name ||
-                      "—"}
-                  </strong>
-
-                  <span>
-                    {favoriteDog
-                      ? `${favoriteDog.count} sortie(s)`
-                      : ""}
-                  </span>
-                </div>
-
-
-                <div className="stats-highlight">
-                  <small>
-                    Territoire
-                    favori
-                  </small>
-
-                  <strong>
-                    {favoriteTerritory
-                      ?.name ||
-                      "—"}
-                  </strong>
-
-                  <span>
-                    {favoriteTerritory
-                      ? `${favoriteTerritory.count} sortie(s)`
-                      : ""}
-                  </span>
-                </div>
+                <strong>
+                  {item.count}
+                </strong>
 
               </div>
 
+            )
+          )
 
-              <StatsList
-                title="Prélèvements par espèce"
-                items={
-                  speciesStats
-                }
-              />
+        )}
 
-              <StatsList
-                title="Sorties par chien"
-                items={
-                  dogStats
-                }
-              />
+      </div>
 
-              <StatsList
-                title="Sorties par territoire"
-                items={
-                  territoryStats
-                }
-              />
+    </section>
 
-              <StatsList
-                title="Types de chasse"
-                items={
-                  huntTypeStats
-                }
-              />
 
-            </section>
-          )}
+    <section className="hunting-stats-ranking-card">
+
+      <div className="hunting-stats-ranking-header">
+
+        <div className="hunting-stats-ranking-icon">
+          <MapPin
+            size={21}
+          />
+        </div>
+
+        <div>
+          <strong>
+            Sorties par territoire
+          </strong>
+
+          <span>
+            Tes lieux les plus fréquentés
+          </span>
+        </div>
+
+      </div>
+
+
+      <div className="hunting-stats-ranking-list">
+
+        {territoryStats.length === 0 ? (
+
+          <div className="hunting-stats-no-data">
+            Aucun territoire enregistré.
+          </div>
+
+        ) : (
+
+          territoryStats.map(
+            (item, index) => (
+
+              <div
+                className="hunting-stats-ranking-row"
+                key={item.name}
+              >
+
+                <div className="hunting-stats-rank-number">
+                  {index + 1}
+                </div>
+
+                <span className="hunting-stats-rank-name">
+                  {item.name}
+                </span>
+
+                <strong>
+                  {item.count}
+                </strong>
+
+              </div>
+
+            )
+          )
+
+        )}
+
+      </div>
+
+    </section>
+
+
+    <section className="hunting-stats-ranking-card">
+
+      <div className="hunting-stats-ranking-header">
+
+        <div className="hunting-stats-ranking-icon">
+          <Crosshair
+            size={21}
+          />
+        </div>
+
+        <div>
+          <strong>
+            Types de chasse
+          </strong>
+
+          <span>
+            Répartition de tes sorties
+          </span>
+        </div>
+
+      </div>
+
+
+      <div className="hunting-stats-ranking-list">
+
+        {huntTypeStats.length === 0 ? (
+
+          <div className="hunting-stats-no-data">
+            Aucune sortie enregistrée.
+          </div>
+
+        ) : (
+
+          huntTypeStats.map(
+            (item, index) => (
+
+              <div
+                className="hunting-stats-ranking-row"
+                key={item.name}
+              >
+
+                <div className="hunting-stats-rank-number">
+                  {index + 1}
+                </div>
+
+                <span className="hunting-stats-rank-name">
+                  {item.name}
+                </span>
+
+                <strong>
+                  {item.count}
+                </strong>
+
+              </div>
+
+            )
+          )
+
+        )}
+
+      </div>
+
+    </section>
+
+  </section>
+)}
 
 
           {/* =================================================
