@@ -11,6 +11,24 @@ import L from "leaflet";
 
 import { supabase } from "./lib/supabase";
 
+import {
+  BarChart3,
+  BookOpen,
+  CalendarDays,
+  ChevronRight,
+  Crosshair,
+  Dog,
+  Home,
+  Map,
+  MapPin,
+  NotebookText,
+  Pencil,
+  Plus,
+  Settings,
+  Target,
+  TreePine,
+} from "lucide-react";
+
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 
 L.Icon.Default.mergeOptions({
@@ -781,260 +799,327 @@ function App() {
           </div>
 
           <button
-            className="profile-button"
-            onClick={() =>
-              setScreen("settings")
-            }
-            title="Réglages"
-          >
-            ⚙️
-          </button>
+  className="profile-button"
+  onClick={() => setScreen("settings")}
+  title="Réglages"
+>
+  <Settings size={24} strokeWidth={1.7} />
+</button>
         </header>
 
         <section className="screen-content">
           {screen === "home" && (
   <>
     {/* SAISON */}
-    <section className="season-card">
-      <div>
-        <span>Saison actuelle</span>
+    <section className="new-season-card">
+      <div className="new-season-icon">
+        <CalendarDays size={27} strokeWidth={1.8} />
+      </div>
+
+      <div className="new-season-text">
+        <span>SAISON ACTUELLE</span>
         <strong>2026 — 2027</strong>
       </div>
 
-      <span>🦌</span>
+      <TreePine
+        className="new-season-tree tree-one"
+        size={92}
+        strokeWidth={1}
+      />
+
+      <TreePine
+        className="new-season-tree tree-two"
+        size={70}
+        strokeWidth={1}
+      />
     </section>
 
-    {/* ACTION PRINCIPALE */}
-    <section className="home-hero">
-      <div className="home-hero-icon">🌲</div>
+    {/* NOUVELLE SORTIE */}
+    <section className="new-trip-hero">
+      <div className="hero-top">
+        <div className="hero-illustration">
+          <TreePine size={43} strokeWidth={1.5} />
+          <Dog size={34} strokeWidth={1.5} />
+        </div>
 
-      <div>
-        <small>Mon carnet</small>
-        <h2>Prêt pour une nouvelle sortie ?</h2>
-        <p>
-          Enregistre ta journée, tes chiens,
-          tes prélèvements et ta position.
-        </p>
+        <div className="hero-copy">
+          <h2>
+            Prêt pour une
+            <br />
+            nouvelle sortie ?
+          </h2>
+
+          <p>
+            Enregistre ta journée, tes chiens,
+            tes prélèvements et ta position.
+          </p>
+        </div>
       </div>
 
       <button
-        className="home-new-trip"
+        className="new-trip-main-button"
         onClick={newTrip}
       >
-        <span>＋</span>
+        <span className="new-trip-plus">
+          <Plus size={25} strokeWidth={2.2} />
+        </span>
+
         Nouvelle sortie
       </button>
     </section>
 
-    {/* RÉSUMÉ */}
-    <div className="home-section-title">
-      <h2>Ma saison</h2>
+    {/* MA SAISON */}
+    <div className="new-section-heading">
+      <h2>MA SAISON</h2>
 
-      <button onClick={() => setScreen("stats")}>
-        Voir les stats →
+      <button
+        type="button"
+        onClick={() => setScreen("stats")}
+      >
+        Voir les stats
+        <ChevronRight size={17} />
       </button>
     </div>
 
-    <div className="stats-grid">
-      <div className="stat-card">
-        <span>📖</span>
+    <section className="new-season-stats">
+      <div className="new-stat-box">
+        <div className="new-stat-icon">
+          <NotebookText size={23} />
+        </div>
+
         <strong>{trips.length}</strong>
-        <small>Sorties</small>
+        <span>Sorties</span>
       </div>
 
-      <div className="stat-card">
-        <span>🎯</span>
+      <div className="new-stat-box">
+        <div className="new-stat-icon brown">
+          <Target size={23} />
+        </div>
+
         <strong>{totalHarvests}</strong>
-        <small>Prélèvements</small>
+        <span>Prélèvements</span>
       </div>
 
-      <div className="stat-card">
-        <span>🐕</span>
-        <strong>
+      <div className="new-stat-box">
+        <div className="new-stat-icon">
+          <Dog size={23} />
+        </div>
+
+        <strong className="new-stat-word">
           {favoriteDog?.name || "—"}
         </strong>
-        <small>Chien le + utilisé</small>
+
+        <span>Chien le + utilisé</span>
       </div>
 
-      <div className="stat-card">
-        <span>📍</span>
-        <strong>
+      <div className="new-stat-box">
+        <div className="new-stat-icon brown">
+          <MapPin size={23} />
+        </div>
+
+        <strong className="new-stat-word">
           {favoriteTerritory?.name || "—"}
         </strong>
-        <small>Territoire favori</small>
+
+        <span>Territoire favori</span>
       </div>
-    </div>
+    </section>
 
     {/* DERNIÈRE SORTIE */}
-    <div className="home-section-title">
-      <h2>Dernière sortie</h2>
+    <div className="new-section-heading">
+      <h2>DERNIÈRE SORTIE</h2>
 
       {trips.length > 0 && (
-        <button onClick={() => setScreen("carnet")}>
-          Voir le carnet →
+        <button
+          type="button"
+          onClick={() => setScreen("carnet")}
+        >
+          Voir le carnet
+          <ChevronRight size={17} />
         </button>
       )}
     </div>
 
     {trips.length === 0 ? (
-      <section className="last-trip-card empty">
-        <div className="last-trip-icon">
-          🌿
-        </div>
+      <section className="new-last-trip empty">
+        <NotebookText size={34} />
 
         <div>
           <strong>Aucune sortie enregistrée</strong>
-
           <p>
-            Ta prochaine journée de chasse
-            apparaîtra ici.
+            Ta prochaine journée apparaîtra ici.
           </p>
         </div>
       </section>
     ) : (
-      <section className="last-trip-card">
-        <div className="last-trip-top">
-          <div className="last-trip-date">
-            <span>📅</span>
+      <section className="new-last-trip">
+        <div className="new-last-header">
+          <div className="date-square">
+            <span>
+              {new Date(
+                trips[0].date + "T12:00:00"
+              )
+                .toLocaleDateString("fr-FR", {
+                  weekday: "short",
+                })
+                .replace(".", "")
+                .toUpperCase()}
+            </span>
 
-            <div>
-              <small>Dernière sortie</small>
+            <strong>
+              {new Date(
+                trips[0].date + "T12:00:00"
+              )
+                .getDate()
+                .toString()
+                .padStart(2, "0")}
+            </strong>
 
-              <strong>
-                {new Date(
-                  trips[0].date + "T12:00:00"
-                ).toLocaleDateString(
-                  "fr-FR",
-                  {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  }
-                )}
-              </strong>
+            <small>
+              {new Date(
+                trips[0].date + "T12:00:00"
+              )
+                .toLocaleDateString("fr-FR", {
+                  month: "short",
+                })
+                .replace(".", "")
+                .toUpperCase()}
+            </small>
+          </div>
+
+          <div className="new-last-title">
+            <strong>
+              {new Date(
+                trips[0].date + "T12:00:00"
+              ).toLocaleDateString("fr-FR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </strong>
+
+            <div className="new-last-meta">
+              <span>
+                <MapPin size={16} />
+                Territoire :{" "}
+                <b>{trips[0].territory}</b>
+              </span>
+
+              <span>
+                <Crosshair size={16} />
+                Type de chasse :{" "}
+                <b>{trips[0].huntType}</b>
+              </span>
             </div>
           </div>
 
           <button
-            className="last-trip-edit"
+            className="new-edit-button"
+            type="button"
             onClick={() => editTrip(trips[0])}
           >
-            ✏️
+            <Pencil size={19} />
           </button>
         </div>
 
-        <div className="last-trip-details">
-          <div>
-            <span>📍</span>
-
-            <div>
-              <small>Territoire</small>
-              <strong>
-                {trips[0].territory}
-              </strong>
-            </div>
+        <div className="new-last-line">
+          <div className="new-last-label">
+            <Target size={20} />
+            <span>Prélèvements</span>
           </div>
 
-          <div>
-            <span>🏹</span>
-
-            <div>
-              <small>Type de chasse</small>
-              <strong>
-                {trips[0].huntType}
-              </strong>
-            </div>
+          <div className="new-last-value">
+            {trips[0].harvests.length > 0
+              ? trips[0].harvests
+                  .map(
+                    (item) =>
+                      `${item.species} ×${item.quantity}`
+                  )
+                  .join(", ")
+              : "Aucun prélèvement"}
           </div>
         </div>
 
-        <div className="last-trip-harvest">
-          <small>🎯 Prélèvements</small>
-
-          {trips[0].harvests.length > 0 ? (
-            <div className="harvest-tags">
-              {trips[0].harvests.map((item) => (
-                <span key={item.species}>
-                  {item.species}
-                  <strong> ×{item.quantity}</strong>
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p>Aucun prélèvement</p>
-          )}
-        </div>
-
-        {trips[0].dogs.length > 0 && (
-          <div className="last-trip-dogs">
-            <small>🐕 Chiens</small>
-
-            <p>
-              {trips[0].dogs.join(" • ")}
-            </p>
+        <div className="new-last-line">
+          <div className="new-last-label">
+            <Dog size={20} />
+            <span>Chiens</span>
           </div>
-        )}
+
+          <div className="new-last-value">
+            {trips[0].dogs.length > 0
+              ? trips[0].dogs.join(", ")
+              : "Aucun chien"}
+          </div>
+        </div>
 
         <button
-          className="last-trip-open"
+          className="new-open-carnet"
+          type="button"
           onClick={() => setScreen("carnet")}
         >
-          Ouvrir mon carnet
-          <span>→</span>
+          <BookOpen size={20} />
+          <span>Ouvrir mon carnet</span>
+          <ChevronRight size={20} />
         </button>
       </section>
     )}
 
     {/* ACCÈS RAPIDES */}
-    <h2 className="quick-title">
-      Accès rapides
-    </h2>
+    <div className="new-section-heading quick-heading">
+      <h2>ACCÈS RAPIDES</h2>
+    </div>
 
-    <div className="quick-grid">
+    <section className="new-quick-grid">
       <button
+        type="button"
         onClick={() => setScreen("carnet")}
       >
-        <span>📖</span>
-
-        <div>
-          <strong>Mon carnet</strong>
-          <small>Mes sorties</small>
+        <div className="quick-icon">
+          <BookOpen size={26} />
         </div>
+
+        <strong>Mon carnet</strong>
+        <span>Mes sorties</span>
       </button>
 
       <button
+        type="button"
         onClick={() => setScreen("map")}
       >
-        <span>🗺️</span>
-
-        <div>
-          <strong>Ma carte</strong>
-          <small>Mes positions</small>
+        <div className="quick-icon">
+          <MapPin size={26} />
         </div>
+
+        <strong>Ma carte</strong>
+        <span>Mes positions</span>
       </button>
 
       <button
+        type="button"
         onClick={() => setScreen("stats")}
       >
-        <span>📊</span>
-
-        <div>
-          <strong>Statistiques</strong>
-          <small>Ma saison</small>
+        <div className="quick-icon">
+          <BarChart3 size={26} />
         </div>
+
+        <strong>Statistiques</strong>
+        <span>Ma saison</span>
       </button>
 
       <button
+        type="button"
         onClick={() => setScreen("settings")}
       >
-        <span>⚙️</span>
-
-        <div>
-          <strong>Réglages</strong>
-          <small>Chiens & espèces</small>
+        <div className="quick-icon">
+          <Settings size={26} />
         </div>
+
+        <strong>Réglages</strong>
+        <span>Chiens & espèces</span>
       </button>
-    </div>
+    </section>
   </>
 )}
 
