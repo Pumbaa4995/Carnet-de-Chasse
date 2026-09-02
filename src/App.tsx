@@ -793,127 +793,250 @@ function App() {
 
         <section className="screen-content">
           {screen === "home" && (
-            <>
-              <section className="season-card">
-                <span>
-                  Saison
+  <>
+    {/* SAISON */}
+    <section className="season-card">
+      <div>
+        <span>Saison actuelle</span>
+        <strong>2026 — 2027</strong>
+      </div>
+
+      <span>🦌</span>
+    </section>
+
+    {/* ACTION PRINCIPALE */}
+    <section className="home-hero">
+      <div className="home-hero-icon">🌲</div>
+
+      <div>
+        <small>Mon carnet</small>
+        <h2>Prêt pour une nouvelle sortie ?</h2>
+        <p>
+          Enregistre ta journée, tes chiens,
+          tes prélèvements et ta position.
+        </p>
+      </div>
+
+      <button
+        className="home-new-trip"
+        onClick={newTrip}
+      >
+        <span>＋</span>
+        Nouvelle sortie
+      </button>
+    </section>
+
+    {/* RÉSUMÉ */}
+    <div className="home-section-title">
+      <h2>Ma saison</h2>
+
+      <button onClick={() => setScreen("stats")}>
+        Voir les stats →
+      </button>
+    </div>
+
+    <div className="stats-grid">
+      <div className="stat-card">
+        <span>📖</span>
+        <strong>{trips.length}</strong>
+        <small>Sorties</small>
+      </div>
+
+      <div className="stat-card">
+        <span>🎯</span>
+        <strong>{totalHarvests}</strong>
+        <small>Prélèvements</small>
+      </div>
+
+      <div className="stat-card">
+        <span>🐕</span>
+        <strong>
+          {favoriteDog?.name || "—"}
+        </strong>
+        <small>Chien le + utilisé</small>
+      </div>
+
+      <div className="stat-card">
+        <span>📍</span>
+        <strong>
+          {favoriteTerritory?.name || "—"}
+        </strong>
+        <small>Territoire favori</small>
+      </div>
+    </div>
+
+    {/* DERNIÈRE SORTIE */}
+    <div className="home-section-title">
+      <h2>Dernière sortie</h2>
+
+      {trips.length > 0 && (
+        <button onClick={() => setScreen("carnet")}>
+          Voir le carnet →
+        </button>
+      )}
+    </div>
+
+    {trips.length === 0 ? (
+      <section className="last-trip-card empty">
+        <div className="last-trip-icon">
+          🌿
+        </div>
+
+        <div>
+          <strong>Aucune sortie enregistrée</strong>
+
+          <p>
+            Ta prochaine journée de chasse
+            apparaîtra ici.
+          </p>
+        </div>
+      </section>
+    ) : (
+      <section className="last-trip-card">
+        <div className="last-trip-top">
+          <div className="last-trip-date">
+            <span>📅</span>
+
+            <div>
+              <small>Dernière sortie</small>
+
+              <strong>
+                {new Date(
+                  trips[0].date + "T12:00:00"
+                ).toLocaleDateString(
+                  "fr-FR",
+                  {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  }
+                )}
+              </strong>
+            </div>
+          </div>
+
+          <button
+            className="last-trip-edit"
+            onClick={() => editTrip(trips[0])}
+          >
+            ✏️
+          </button>
+        </div>
+
+        <div className="last-trip-details">
+          <div>
+            <span>📍</span>
+
+            <div>
+              <small>Territoire</small>
+              <strong>
+                {trips[0].territory}
+              </strong>
+            </div>
+          </div>
+
+          <div>
+            <span>🏹</span>
+
+            <div>
+              <small>Type de chasse</small>
+              <strong>
+                {trips[0].huntType}
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="last-trip-harvest">
+          <small>🎯 Prélèvements</small>
+
+          {trips[0].harvests.length > 0 ? (
+            <div className="harvest-tags">
+              {trips[0].harvests.map((item) => (
+                <span key={item.species}>
+                  {item.species}
+                  <strong> ×{item.quantity}</strong>
                 </span>
-
-                <strong>
-                  2026 — 2027
-                </strong>
-              </section>
-
-              <h2>
-                Mon activité
-              </h2>
-
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <span>
-                    📖
-                  </span>
-
-                  <strong>
-                    {trips.length}
-                  </strong>
-
-                  <small>
-                    Sorties
-                  </small>
-                </div>
-
-                <div className="stat-card">
-                  <span>
-                    🎯
-                  </span>
-
-                  <strong>
-                    {totalHarvests}
-                  </strong>
-
-                  <small>
-                    Prélèvements
-                  </small>
-                </div>
-
-                <div className="stat-card">
-                  <span>
-                    🐕
-                  </span>
-
-                  <strong>
-                    {dogStats.length}
-                  </strong>
-
-                  <small>
-                    Chiens utilisés
-                  </small>
-                </div>
-
-                <div className="stat-card">
-                  <span>
-                    📍
-                  </span>
-
-                  <strong>
-                    {territoryStats.length}
-                  </strong>
-
-                  <small>
-                    Territoires
-                  </small>
-                </div>
-              </div>
-
-              <h2>
-                Actions rapides
-              </h2>
-
-              <button
-                className="action-button"
-                onClick={newTrip}
-              >
-                ➕ Nouvelle sortie
-              </button>
-
-              <button
-                className="action-button secondary"
-                onClick={() =>
-                  setScreen("carnet")
-                }
-              >
-                📖 Ouvrir mon carnet
-              </button>
-
-              <button
-                className="action-button secondary"
-                onClick={() =>
-                  setScreen("map")
-                }
-              >
-                🗺️ Voir ma carte
-              </button>
-
-              <button
-                className="action-button secondary"
-                onClick={() =>
-                  setScreen("stats")
-                }
-              >
-                📊 Voir mes statistiques
-              </button>
-
-              <button
-                className="action-button secondary"
-                onClick={() =>
-                  setScreen("settings")
-                }
-              >
-                ⚙️ Réglages
-              </button>
-            </>
+              ))}
+            </div>
+          ) : (
+            <p>Aucun prélèvement</p>
           )}
+        </div>
+
+        {trips[0].dogs.length > 0 && (
+          <div className="last-trip-dogs">
+            <small>🐕 Chiens</small>
+
+            <p>
+              {trips[0].dogs.join(" • ")}
+            </p>
+          </div>
+        )}
+
+        <button
+          className="last-trip-open"
+          onClick={() => setScreen("carnet")}
+        >
+          Ouvrir mon carnet
+          <span>→</span>
+        </button>
+      </section>
+    )}
+
+    {/* ACCÈS RAPIDES */}
+    <h2 className="quick-title">
+      Accès rapides
+    </h2>
+
+    <div className="quick-grid">
+      <button
+        onClick={() => setScreen("carnet")}
+      >
+        <span>📖</span>
+
+        <div>
+          <strong>Mon carnet</strong>
+          <small>Mes sorties</small>
+        </div>
+      </button>
+
+      <button
+        onClick={() => setScreen("map")}
+      >
+        <span>🗺️</span>
+
+        <div>
+          <strong>Ma carte</strong>
+          <small>Mes positions</small>
+        </div>
+      </button>
+
+      <button
+        onClick={() => setScreen("stats")}
+      >
+        <span>📊</span>
+
+        <div>
+          <strong>Statistiques</strong>
+          <small>Ma saison</small>
+        </div>
+      </button>
+
+      <button
+        onClick={() => setScreen("settings")}
+      >
+        <span>⚙️</span>
+
+        <div>
+          <strong>Réglages</strong>
+          <small>Chiens & espèces</small>
+        </div>
+      </button>
+    </div>
+  </>
+)}
 
           {screen === "carnet" && (
             <>
