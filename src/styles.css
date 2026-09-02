@@ -1764,3 +1764,629 @@ button {
     gap: 7px;
   }
 }
+
+/* ======================================================
+   CARNET — NOUVEAU DESIGN
+   ====================================================== */
+
+.carnet-page {
+  padding-bottom: 25px;
+}
+
+.carnet-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 15px;
+
+  margin-bottom: 22px;
+}
+
+.carnet-eyebrow {
+  display: block;
+  margin-bottom: 5px;
+
+  color: #846f49;
+
+  font-family: Georgia, serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+
+.carnet-heading h1 {
+  margin: 0;
+
+  color: #173c2a;
+
+  font-family: Georgia, serif;
+  font-size: 2rem;
+}
+
+.carnet-heading p {
+  margin: 5px 0 0;
+
+  color: #738078;
+  font-size: 0.8rem;
+}
+
+.carnet-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  min-height: 45px;
+
+  padding: 0 15px;
+
+  border: 0;
+  border-radius: 15px;
+
+  background: #1d5137;
+  color: white;
+
+  font-family: Georgia, serif;
+  font-weight: 700;
+
+  box-shadow:
+    0 7px 17px
+    rgba(29, 81, 55, 0.18);
+
+  cursor: pointer;
+}
+
+
+/* RECHERCHE */
+
+.carnet-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  min-height: 53px;
+
+  padding: 0 16px;
+
+  border: 1px solid #deddd4;
+  border-radius: 17px;
+
+  background: #fffefa;
+
+  color: #647269;
+
+  box-shadow:
+    0 4px 14px
+    rgba(35, 55, 42, 0.045);
+}
+
+.carnet-search:focus-within {
+  border-color: #6e8b76;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(40, 88, 61, 0.08);
+}
+
+.carnet-search input {
+  width: 100%;
+
+  padding: 15px 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: #26372d;
+
+  font-size: 0.9rem;
+}
+
+.carnet-search input::placeholder {
+  color: #9a9f9b;
+}
+
+
+/* FILTRES */
+
+.carnet-filter-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  margin: 17px 3px 9px;
+
+  color: #69756e;
+
+  font-size: 0.72rem;
+}
+
+.carnet-filters {
+  display: flex;
+  gap: 8px;
+
+  overflow-x: auto;
+
+  margin-bottom: 20px;
+  padding-bottom: 3px;
+
+  scrollbar-width: none;
+}
+
+.carnet-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.carnet-filters button {
+  flex-shrink: 0;
+
+  padding: 9px 14px;
+
+  border: 1px solid #deddd4;
+  border-radius: 50px;
+
+  background: #fffefa;
+  color: #55655c;
+
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.carnet-filters button.active {
+  border-color: #1e5138;
+
+  background: #1e5138;
+  color: white;
+}
+
+
+/* NOMBRE DE RÉSULTATS */
+
+.carnet-results-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin: 0 3px 12px;
+}
+
+.carnet-results-heading strong {
+  color: #263a2f;
+
+  font-family: Georgia, serif;
+  font-size: 0.85rem;
+}
+
+.carnet-results-heading button {
+  padding: 0;
+
+  border: 0;
+  background: transparent;
+
+  color: #866d43;
+
+  font-size: 0.7rem;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/* CARTE SORTIE */
+
+.carnet-trip-card {
+  overflow: hidden;
+
+  margin-bottom: 16px;
+
+  padding: 18px;
+
+  border:
+    1px solid
+    rgba(37, 67, 49, 0.11);
+
+  border-radius: 23px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fffefa,
+      #faf8f0
+    );
+
+  box-shadow:
+    0 7px 22px
+    rgba(35, 55, 42, 0.065);
+}
+
+.carnet-trip-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+
+  padding-bottom: 15px;
+
+  border-bottom:
+    1px solid
+    rgba(40, 70, 52, 0.09);
+}
+
+
+/* DATE */
+
+.carnet-date-box {
+  width: 63px;
+  min-width: 63px;
+  height: 80px;
+
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #d9ddd5;
+  border-radius: 12px;
+
+  background: #f7f7f0;
+
+  font-family: Georgia, serif;
+}
+
+.carnet-date-box > span {
+  width: 100%;
+
+  padding: 3px;
+
+  background: #285b40;
+  color: white;
+
+  text-align: center;
+
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+.carnet-date-box strong {
+  margin-top: 3px;
+
+  color: #173427;
+
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.carnet-date-box small {
+  margin-top: 3px;
+
+  color: #57665e;
+
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+
+/* TITRE SORTIE */
+
+.carnet-trip-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.carnet-trip-type {
+  display: inline-block;
+
+  margin-bottom: 5px;
+  padding: 4px 8px;
+
+  border-radius: 20px;
+
+  background: #e6ecdf;
+  color: #31543f;
+
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+.carnet-trip-main h2 {
+  margin: 0 0 7px;
+
+  overflow: hidden;
+
+  color: #18382a;
+
+  font-family: Georgia, serif;
+  font-size: 1.1rem;
+
+  text-overflow: ellipsis;
+}
+
+.carnet-trip-date {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  color: #758078;
+
+  font-size: 0.67rem;
+
+  text-transform: capitalize;
+}
+
+.carnet-edit {
+  width: 38px;
+  height: 38px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #e0dfd7;
+  border-radius: 50%;
+
+  background: #f5f2e8;
+  color: #244a35;
+
+  cursor: pointer;
+}
+
+
+/* INFORMATIONS */
+
+.carnet-trip-info {
+  padding-top: 5px;
+}
+
+.carnet-info-row {
+  display: grid;
+
+  grid-template-columns:
+    38px minmax(0, 1fr);
+
+  gap: 10px;
+
+  padding: 11px 0;
+
+  border-bottom:
+    1px solid
+    rgba(40, 70, 52, 0.07);
+}
+
+.carnet-info-icon {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 11px;
+
+  background: #edf1e8;
+  color: #725f3e;
+}
+
+.carnet-info-row > div:last-child {
+  min-width: 0;
+}
+
+.carnet-info-row > div > span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #6f7b74;
+
+  font-size: 0.65rem;
+}
+
+.carnet-info-row p {
+  margin: 0;
+
+  color: #293d32;
+
+  font-family: Georgia, serif;
+  font-size: 0.8rem;
+}
+
+
+/* PRÉLÈVEMENTS */
+
+.carnet-harvests {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 6px;
+}
+
+.carnet-harvests span {
+  padding: 6px 9px;
+
+  border-radius: 9px;
+
+  background: #eee8da;
+  color: #594a31;
+
+  font-family: Georgia, serif;
+  font-size: 0.72rem;
+}
+
+.carnet-harvests b {
+  margin-left: 4px;
+
+  color: #214833;
+}
+
+
+/* NOTES */
+
+.carnet-notes {
+  margin-top: 12px;
+  padding: 12px 13px;
+
+  border-radius: 13px;
+
+  background: #f4f1e8;
+}
+
+.carnet-notes span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #806a45;
+
+  font-size: 0.62rem;
+  font-weight: 700;
+
+  text-transform: uppercase;
+}
+
+.carnet-notes p {
+  margin: 0;
+
+  color: #4f5c55;
+
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+
+/* ACTIONS */
+
+.carnet-actions {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 9px;
+
+  margin-top: 14px;
+}
+
+.carnet-actions button {
+  min-height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  border-radius: 13px;
+
+  font-size: 0.75rem;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.carnet-modify {
+  border: 0;
+
+  background: #e4ebdf;
+  color: #214832;
+}
+
+.carnet-delete {
+  border: 1px solid #eadbd6;
+
+  background: #fff9f7;
+  color: #9a4e43;
+}
+
+
+/* ÉTAT VIDE */
+
+.carnet-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 42px 20px;
+
+  border: 1px dashed #ccd3ca;
+  border-radius: 22px;
+
+  background: #fffefa;
+
+  text-align: center;
+}
+
+.carnet-empty-icon {
+  width: 62px;
+  height: 62px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 13px;
+
+  border-radius: 50%;
+
+  background: #e8ede3;
+  color: #28543b;
+}
+
+.carnet-empty strong {
+  color: #233b2e;
+
+  font-family: Georgia, serif;
+}
+
+.carnet-empty p {
+  max-width: 260px;
+
+  margin: 7px 0 15px;
+
+  color: #758078;
+
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.carnet-empty button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 10px 14px;
+
+  border: 0;
+  border-radius: 12px;
+
+  background: #245239;
+  color: white;
+
+  font-weight: 700;
+}
+
+
+/* PETITS ÉCRANS */
+
+@media (max-width: 420px) {
+  .carnet-heading {
+    align-items: flex-start;
+  }
+
+  .carnet-heading h1 {
+    font-size: 1.7rem;
+  }
+
+  .carnet-add span {
+    display: none;
+  }
+
+  .carnet-add {
+    width: 45px;
+    padding: 0;
+  }
+}

@@ -1,15 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
 import {
-  CircleMarker,
-  MapContainer,
-  Marker,
-  Popup,
-  TileLayer,
-  useMap,
-} from "react-leaflet";
-import L from "leaflet";
-
-import { supabase } from "./lib/supabase";
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   BarChart3,
@@ -19,26 +12,37 @@ import {
   Crosshair,
   Dog,
   Home,
-  Map,
+  Map as MapIcon,
   MapPin,
   NotebookText,
   Pencil,
   Plus,
+  Search,
   Settings,
+  SlidersHorizontal,
   Target,
+  Trash2,
   TreePine,
+  X,
 } from "lucide-react";
 
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+import {
+  CircleMarker,
+  MapContainer,
+  Marker,
+  Popup,
+  TileLayer,
+  useMap,
+} from "react-leaflet";
 
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+import L from "leaflet";
+
+import { supabase } from "./lib/supabase";
+
+
+/* =========================================================
+   TYPES
+   ========================================================= */
 
 type Harvest = {
   species: string;
@@ -67,18 +71,42 @@ type NamedItem = {
   nom: string;
 };
 
-function emptyForm() {
-  return {
-    date: new Date().toISOString().slice(0, 10),
-    territory: "",
-    huntType: "Petit gibier",
-    harvests: [] as Harvest[],
-    dogs: [] as string[],
-    notes: "",
-    latitude: null as number | null,
-    longitude: null as number | null,
-  };
-}
+type Screen =
+  | "home"
+  | "carnet"
+  | "map"
+  | "stats"
+  | "settings";
+
+type TripForm = {
+  date: string;
+  territory: string;
+  huntType: string;
+  harvests: Harvest[];
+  dogs: string[];
+  notes: string;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+
+/* =========================================================
+   LEAFLET
+   ========================================================= */
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+
+  iconUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+
+  shadowUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
+
 
 function MapAutoFit({
   trips,
@@ -90,16 +118,17 @@ function MapAutoFit({
   const map = useMap();
 
   useEffect(() => {
-    const positions: [number, number][] = trips
-      .filter(
-        (trip) =>
-          trip.latitude != null &&
-          trip.longitude != null
-      )
-      .map((trip) => [
-        trip.latitude as number,
-        trip.longitude as number,
-      ]);
+    const positions: [number, number][] =
+      trips
+        .filter(
+          (trip) =>
+            trip.latitude != null &&
+            trip.longitude != null
+        )
+        .map((trip) => [
+          trip.latitude as number,
+          trip.longitude as number,
+        ]);
 
     if (userPosition) {
       positions.push([
@@ -117,664 +146,1170 @@ function MapAutoFit({
       return;
     }
 
-    map.fitBounds(L.latLngBounds(positions), {
-      padding: [40, 40],
-      maxZoom: 14,
-    });
+    map.fitBounds(
+      L.latLngBounds(positions),
+      {
+        padding: [40, 40],
+        maxZoom: 14,
+      }
+    );
   }, [map, trips, userPosition]);
 
   return null;
 }
 
-function App() {
-  const [started, setStarted] = useState(
-    localStorage.getItem("carnet-started") === "1"
+
+/* =========================================================
+   APPLICATION
+   ========================================================= */
+
+export default function App() {
+  const [started, setStarted] =
+    useState<boolean>(() => {
+      return (
+        localStorage.getItem(
+          "carnet-started"
+        ) === "true"
+      );
+    });
+
+  const [screen, setScreen] =
+    useState<Screen>("home");
+
+  const [trips, setTrips] =
+    useState<HuntingTrip[]>([]);
+
+  const [loadingTrips, setLoadingTrips] =
+    useState(true);
+
+  const [dogs, setDogs] =
+    useState<NamedItem[]>([]);
+
+  const [speciesList, setSpeciesList] =
+    useState<NamedItem[]>([]);
+
+  const [
+    loadingSettings,
+    setLoadingSettings,
+  ] = useState(true);
+
+  const [showForm, setShowForm] =
+    useState(false);
+
+  const [
+    editingTripId,
+    setEditingTripId,
+  ] = useState<string | null>(null);
+
+  const [species, setSpecies] =
+    useState("");
+
+  const [quantity, setQuantity] =
+    useState(1);
+
+  const [locating, setLocating] =
+    useState(false);
+
+  const [
+    locatingOnMap,
+    setLocatingOnMap,
+  ] = useState(false);
+
+  const [
+    userPosition,
+    setUserPosition,
+  ] = useState<UserPosition | null>(
+    null
   );
 
-  const [trips, setTrips] = useState<HuntingTrip[]>([]);
-  const [loadingTrips, setLoadingTrips] = useState(true);
+  const [
+    newDogName,
+    setNewDogName,
+  ] = useState("");
 
-  const [dogs, setDogs] = useState<NamedItem[]>([]);
-  const [speciesList, setSpeciesList] = useState<NamedItem[]>([]);
-  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [
+    newSpeciesName,
+    setNewSpeciesName,
+  ] = useState("");
 
-  const [screen, setScreen] = useState<
-    "home" | "carnet" | "map" | "stats" | "settings"
-  >("home");
+  /* Recherche carnet */
 
-  const [showForm, setShowForm] = useState(false);
+  const [
+    tripSearch,
+    setTripSearch,
+  ] = useState("");
 
-  const [editingTripId, setEditingTripId] =
-    useState<string | null>(null);
+  const [
+    huntTypeFilter,
+    setHuntTypeFilter,
+  ] = useState("Tous");
 
-  const [form, setForm] = useState(emptyForm());
 
-  const [species, setSpecies] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  /* =========================================================
+     FORMULAIRE
+     ========================================================= */
 
-  const [locating, setLocating] = useState(false);
-  const [locatingOnMap, setLocatingOnMap] = useState(false);
+  const emptyForm = (): TripForm => ({
+    date: new Date()
+      .toISOString()
+      .split("T")[0],
 
-  const [userPosition, setUserPosition] =
-    useState<UserPosition | null>(null);
+    territory: "",
+    huntType: "Battue",
 
-  const [newDogName, setNewDogName] = useState("");
-  const [newSpeciesName, setNewSpeciesName] = useState("");
+    harvests: [],
+
+    dogs: [],
+
+    notes: "",
+
+    latitude: null,
+    longitude: null,
+  });
+
+  const [form, setForm] =
+    useState<TripForm>(
+      emptyForm()
+    );
+
+
+  /* =========================================================
+     CHARGEMENT
+     ========================================================= */
 
   useEffect(() => {
     loadTrips();
     loadSettings();
   }, []);
 
+
   async function loadTrips() {
     setLoadingTrips(true);
 
-    const { data, error } = await supabase
+    const {
+      data,
+      error,
+    } = await supabase
       .from("sorties")
       .select("*")
-      .order("date", { ascending: false });
+      .order("date", {
+        ascending: false,
+      })
+      .order("created_at", {
+        ascending: false,
+      });
 
     if (error) {
-      console.error(error);
-      alert(`Erreur chargement : ${error.message}`);
+      console.error(
+        "Erreur chargement sorties :",
+        error
+      );
+
       setLoadingTrips(false);
       return;
     }
 
-    const loadedTrips: HuntingTrip[] = (data || []).map(
-      (row) => ({
-        id: row.id,
-        date: row.date,
-        territory: row.territoire,
-        huntType: row.type_chasse,
-        harvests: row.prelevements || [],
-        dogs: row.chiens || [],
-        notes: row.observations || "",
-        latitude: row.latitude,
-        longitude: row.longitude,
-      })
-    );
+    const formatted: HuntingTrip[] =
+      (data || []).map(
+        (item: any) => ({
+          id: item.id,
 
-    setTrips(loadedTrips);
+          date: item.date,
+
+          territory:
+            item.territoire || "",
+
+          huntType:
+            item.type_chasse || "",
+
+          harvests:
+            item.prelevements || [],
+
+          dogs:
+            item.chiens || [],
+
+          notes:
+            item.observations || "",
+
+          latitude:
+            item.latitude,
+
+          longitude:
+            item.longitude,
+        })
+      );
+
+    setTrips(formatted);
+
     setLoadingTrips(false);
   }
+
 
   async function loadSettings() {
     setLoadingSettings(true);
 
     const [
-      { data: dogsData, error: dogsError },
-      { data: speciesData, error: speciesError },
+      dogsResult,
+      speciesResult,
     ] = await Promise.all([
       supabase
         .from("chiens")
         .select("*")
-        .order("nom", { ascending: true }),
+        .order("nom"),
 
       supabase
         .from("especes")
         .select("*")
-        .order("nom", { ascending: true }),
+        .order("nom"),
     ]);
 
-    if (dogsError) {
-      console.error(dogsError);
-      alert(`Erreur chiens : ${dogsError.message}`);
+    if (!dogsResult.error) {
+      setDogs(
+        dogsResult.data || []
+      );
     }
 
-    if (speciesError) {
-      console.error(speciesError);
-      alert(`Erreur espèces : ${speciesError.message}`);
-    }
-
-    const loadedDogs: NamedItem[] = dogsData || [];
-    const loadedSpecies: NamedItem[] = speciesData || [];
-
-    setDogs(loadedDogs);
-    setSpeciesList(loadedSpecies);
-
-    if (!species && loadedSpecies.length > 0) {
-      setSpecies(loadedSpecies[0].nom);
+    if (!speciesResult.error) {
+      setSpeciesList(
+        speciesResult.data || []
+      );
     }
 
     setLoadingSettings(false);
   }
 
-  const totalHarvests = useMemo(() => {
-    return trips.reduce(
-      (total, trip) =>
-        total +
-        trip.harvests.reduce(
-          (sum, harvest) => sum + harvest.quantity,
-          0
-        ),
-      0
-    );
-  }, [trips]);
 
-  const harvestStats = useMemo(() => {
-    const stats: Record<string, number> = {};
+  /* =========================================================
+     STATISTIQUES
+     ========================================================= */
 
-    trips.forEach((trip) => {
-      trip.harvests.forEach((harvest) => {
-        stats[harvest.species] =
-          (stats[harvest.species] || 0) +
-          harvest.quantity;
+  const totalHarvests =
+    useMemo(() => {
+      return trips.reduce(
+        (total, trip) =>
+          total +
+          trip.harvests.reduce(
+            (sum, harvest) =>
+              sum +
+              Number(
+                harvest.quantity || 0
+              ),
+            0
+          ),
+        0
+      );
+    }, [trips]);
+
+
+  const favoriteDog =
+    useMemo(() => {
+      const counts: Record<
+        string,
+        number
+      > = {};
+
+      trips.forEach((trip) => {
+        trip.dogs.forEach(
+          (dog) => {
+            counts[dog] =
+              (counts[dog] || 0) + 1;
+          }
+        );
       });
-    });
 
-    return Object.entries(stats)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [trips]);
+      const winner =
+        Object.entries(counts).sort(
+          (a, b) => b[1] - a[1]
+        )[0];
 
-  const dogStats = useMemo(() => {
-    const stats: Record<string, number> = {};
-
-    trips.forEach((trip) => {
-      trip.dogs.forEach((dog) => {
-        stats[dog] =
-          (stats[dog] || 0) + 1;
-      });
-    });
-
-    return Object.entries(stats)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [trips]);
-
-  const territoryStats = useMemo(() => {
-    const stats: Record<string, number> = {};
-
-    trips.forEach((trip) => {
-      const territory = trip.territory.trim();
-
-      if (territory) {
-        stats[territory] =
-          (stats[territory] || 0) + 1;
+      if (!winner) {
+        return null;
       }
-    });
 
-    return Object.entries(stats)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [trips]);
+      return {
+        name: winner[0],
+        count: winner[1],
+      };
+    }, [trips]);
 
-  const huntTypeStats = useMemo(() => {
-    const stats: Record<string, number> = {};
 
-    trips.forEach((trip) => {
-      stats[trip.huntType] =
-        (stats[trip.huntType] || 0) + 1;
-    });
+  const favoriteTerritory =
+    useMemo(() => {
+      const counts: Record<
+        string,
+        number
+      > = {};
 
-    return Object.entries(stats)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [trips]);
+      trips.forEach((trip) => {
+        if (!trip.territory) {
+          return;
+        }
 
-  const geolocatedTrips = useMemo(() => {
-    return trips.filter(
-      (trip) =>
-        trip.latitude != null &&
-        trip.longitude != null
-    );
-  }, [trips]);
+        counts[trip.territory] =
+          (counts[
+            trip.territory
+          ] || 0) + 1;
+      });
 
-  const favoriteSpecies = harvestStats[0] || null;
-  const favoriteDog = dogStats[0] || null;
-  const favoriteTerritory = territoryStats[0] || null;
+      const winner =
+        Object.entries(counts).sort(
+          (a, b) => b[1] - a[1]
+        )[0];
+
+      if (!winner) {
+        return null;
+      }
+
+      return {
+        name: winner[0],
+        count: winner[1],
+      };
+    }, [trips]);
+
+
+  const favoriteSpecies =
+    useMemo(() => {
+      const counts: Record<
+        string,
+        number
+      > = {};
+
+      trips.forEach((trip) => {
+        trip.harvests.forEach(
+          (harvest) => {
+            counts[
+              harvest.species
+            ] =
+              (counts[
+                harvest.species
+              ] || 0) +
+              Number(
+                harvest.quantity
+              );
+          }
+        );
+      });
+
+      const winner =
+        Object.entries(counts).sort(
+          (a, b) => b[1] - a[1]
+        )[0];
+
+      if (!winner) {
+        return null;
+      }
+
+      return {
+        name: winner[0],
+        count: winner[1],
+      };
+    }, [trips]);
+
+
+  const speciesStats =
+    useMemo(() => {
+      const counts: Record<
+        string,
+        number
+      > = {};
+
+      trips.forEach((trip) => {
+        trip.harvests.forEach(
+          (harvest) => {
+            counts[
+              harvest.species
+            ] =
+              (counts[
+                harvest.species
+              ] || 0) +
+              Number(
+                harvest.quantity
+              );
+          }
+        );
+      });
+
+      return Object.entries(counts)
+        .map(
+          ([name, count]) => ({
+            name,
+            count,
+          })
+        )
+        .sort(
+          (a, b) =>
+            b.count - a.count
+        );
+    }, [trips]);
+
+
+  const dogStats =
+    useMemo(() => {
+      const counts: Record<
+        string,
+        number
+      > = {};
+
+      trips.forEach((trip) => {
+        trip.dogs.forEach(
+          (dog) => {
+            counts[dog] =
+              (counts[dog] || 0) + 1;
+          }
+        );
+      });
+
+      return Object.entries(counts)
+        .map(
+          ([name, count]) => ({
+            name,
+            count,
+          })
+        )
+        .sort(
+          (a, b) =>
+            b.count - a.count
+        );
+    }, [trips]);
+
+
+  const territoryStats =
+    useMemo(() => {
+      const counts: Record<
+        string,
+        number
+      > = {};
+
+      trips.forEach((trip) => {
+        if (!trip.territory) {
+          return;
+        }
+
+        counts[trip.territory] =
+          (counts[
+            trip.territory
+          ] || 0) + 1;
+      });
+
+      return Object.entries(counts)
+        .map(
+          ([name, count]) => ({
+            name,
+            count,
+          })
+        )
+        .sort(
+          (a, b) =>
+            b.count - a.count
+        );
+    }, [trips]);
+
+
+  const huntTypeStats =
+    useMemo(() => {
+      const counts: Record<
+        string,
+        number
+      > = {};
+
+      trips.forEach((trip) => {
+        if (!trip.huntType) {
+          return;
+        }
+
+        counts[trip.huntType] =
+          (counts[
+            trip.huntType
+          ] || 0) + 1;
+      });
+
+      return Object.entries(counts)
+        .map(
+          ([name, count]) => ({
+            name,
+            count,
+          })
+        )
+        .sort(
+          (a, b) =>
+            b.count - a.count
+        );
+    }, [trips]);
+
+
+  const filteredTrips =
+    useMemo(() => {
+      const search =
+        tripSearch
+          .trim()
+          .toLowerCase();
+
+      return trips.filter(
+        (trip) => {
+          const matchesType =
+            huntTypeFilter ===
+              "Tous" ||
+            trip.huntType ===
+              huntTypeFilter;
+
+          const searchableText =
+            [
+              trip.territory,
+              trip.huntType,
+              trip.notes,
+
+              ...trip.dogs,
+
+              ...trip.harvests.map(
+                (harvest) =>
+                  harvest.species
+              ),
+            ]
+              .join(" ")
+              .toLowerCase();
+
+          const matchesSearch =
+            !search ||
+            searchableText.includes(
+              search
+            );
+
+          return (
+            matchesType &&
+            matchesSearch
+          );
+        }
+      );
+    }, [
+      trips,
+      tripSearch,
+      huntTypeFilter,
+    ]);
+
+
+  /* =========================================================
+     NAVIGATION / FORMULAIRE
+     ========================================================= */
 
   function startApp() {
+    localStorage.setItem(
+      "carnet-started",
+      "true"
+    );
+
     setStarted(true);
-    localStorage.setItem("carnet-started", "1");
   }
+
 
   function newTrip() {
     setEditingTripId(null);
-    setForm(emptyForm());
 
-    if (speciesList.length > 0) {
-      setSpecies(speciesList[0].nom);
-    } else {
-      setSpecies("");
-    }
+    setForm(
+      emptyForm()
+    );
 
+    setSpecies("");
     setQuantity(1);
+
     setShowForm(true);
   }
 
-  function editTrip(trip: HuntingTrip) {
+
+  function editTrip(
+    trip: HuntingTrip
+  ) {
     setEditingTripId(trip.id);
 
     setForm({
       date: trip.date,
-      territory: trip.territory,
-      huntType: trip.huntType,
-      harvests: [...trip.harvests],
-      dogs: [...trip.dogs],
-      notes: trip.notes,
-      latitude: trip.latitude ?? null,
-      longitude: trip.longitude ?? null,
+
+      territory:
+        trip.territory,
+
+      huntType:
+        trip.huntType,
+
+      harvests:
+        [...trip.harvests],
+
+      dogs:
+        [...trip.dogs],
+
+      notes:
+        trip.notes,
+
+      latitude:
+        trip.latitude ??
+        null,
+
+      longitude:
+        trip.longitude ??
+        null,
     });
 
-    if (speciesList.length > 0) {
-      setSpecies(speciesList[0].nom);
-    } else {
-      setSpecies("");
-    }
-
+    setSpecies("");
     setQuantity(1);
+
     setShowForm(true);
   }
 
+
   function closeForm() {
     setShowForm(false);
+
     setEditingTripId(null);
-    setForm(emptyForm());
   }
+
+
+  /* =========================================================
+     PRÉLÈVEMENTS
+     ========================================================= */
 
   function addHarvest() {
     if (!species) {
-      alert("Ajoutez d'abord une espèce dans les réglages.");
       return;
     }
 
-    setForm((current) => {
-      const existing = current.harvests.find(
-        (item) => item.species === species
+    const amount =
+      Math.max(
+        1,
+        Number(quantity)
       );
 
-      if (existing) {
-        return {
-          ...current,
-          harvests: current.harvests.map((item) =>
-            item.species === species
-              ? {
-                  ...item,
-                  quantity: item.quantity + quantity,
-                }
-              : item
-          ),
-        };
-      }
+    const existing =
+      form.harvests.find(
+        (item) =>
+          item.species === species
+      );
 
-      return {
-        ...current,
+    if (existing) {
+      setForm({
+        ...form,
+
+        harvests:
+          form.harvests.map(
+            (item) =>
+              item.species ===
+              species
+                ? {
+                    ...item,
+
+                    quantity:
+                      item.quantity +
+                      amount,
+                  }
+                : item
+          ),
+      });
+    } else {
+      setForm({
+        ...form,
+
         harvests: [
-          ...current.harvests,
+          ...form.harvests,
+
           {
             species,
-            quantity,
+            quantity: amount,
           },
         ],
-      };
-    });
+      });
+    }
 
+    setSpecies("");
     setQuantity(1);
   }
 
-  function removeHarvest(speciesToRemove: string) {
-    setForm((current) => ({
-      ...current,
-      harvests: current.harvests.filter(
-        (item) => item.species !== speciesToRemove
-      ),
-    }));
+
+  function removeHarvest(
+    speciesName: string
+  ) {
+    setForm({
+      ...form,
+
+      harvests:
+        form.harvests.filter(
+          (item) =>
+            item.species !==
+            speciesName
+        ),
+    });
   }
 
-  function toggleDog(dog: string) {
-    setForm((current) => ({
-      ...current,
-      dogs: current.dogs.includes(dog)
-        ? current.dogs.filter((item) => item !== dog)
-        : [...current.dogs, dog],
-    }));
+
+  /* =========================================================
+     CHIENS
+     ========================================================= */
+
+  function toggleDog(
+    dogName: string
+  ) {
+    const selected =
+      form.dogs.includes(
+        dogName
+      );
+
+    setForm({
+      ...form,
+
+      dogs: selected
+        ? form.dogs.filter(
+            (dog) =>
+              dog !== dogName
+          )
+        : [
+            ...form.dogs,
+            dogName,
+          ],
+    });
   }
+
+
+  /* =========================================================
+     GPS
+     ========================================================= */
 
   function useMyPosition() {
-    if (!navigator.geolocation) {
-      alert("La géolocalisation n'est pas disponible.");
+    if (
+      !navigator.geolocation
+    ) {
+      alert(
+        "La géolocalisation n'est pas disponible sur cet appareil."
+      );
+
       return;
     }
 
     setLocating(true);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setForm((current) => ({
-          ...current,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        }));
+    navigator.geolocation
+      .getCurrentPosition(
+        (position) => {
+          setForm({
+            ...form,
 
-        setLocating(false);
-      },
-      (error) => {
-        console.error(error);
-        setLocating(false);
-        alert("Impossible d'obtenir votre position.");
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
-      }
-    );
+            latitude:
+              position.coords
+                .latitude,
+
+            longitude:
+              position.coords
+                .longitude,
+          });
+
+          setLocating(false);
+        },
+
+        (error) => {
+          console.error(
+            error
+          );
+
+          alert(
+            "Impossible de récupérer ta position."
+          );
+
+          setLocating(false);
+        },
+
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        }
+      );
   }
 
+
+  function removePosition() {
+    setForm({
+      ...form,
+
+      latitude: null,
+      longitude: null,
+    });
+  }
+
+
   function findMeOnMap() {
-    if (!navigator.geolocation) {
-      alert("La géolocalisation n'est pas disponible.");
+    if (
+      !navigator.geolocation
+    ) {
+      alert(
+        "La géolocalisation n'est pas disponible."
+      );
+
       return;
     }
 
     setLocatingOnMap(true);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserPosition({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
+    navigator.geolocation
+      .getCurrentPosition(
+        (position) => {
+          setUserPosition({
+            latitude:
+              position.coords
+                .latitude,
 
-        setLocatingOnMap(false);
-      },
-      (error) => {
-        console.error(error);
-        setLocatingOnMap(false);
-        alert("Impossible d'obtenir votre position.");
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
-      }
-    );
+            longitude:
+              position.coords
+                .longitude,
+          });
+
+          setLocatingOnMap(false);
+        },
+
+        () => {
+          alert(
+            "Impossible de récupérer ta position."
+          );
+
+          setLocatingOnMap(false);
+        },
+
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+        }
+      );
   }
 
-  function removePosition() {
-    setForm((current) => ({
-      ...current,
-      latitude: null,
-      longitude: null,
-    }));
-  }
 
-  async function addDog() {
-    const name = newDogName.trim();
+  /* =========================================================
+     SUPABASE SORTIES
+     ========================================================= */
 
-    if (!name) {
-      alert("Indique le nom du chien.");
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("chiens")
-      .insert({
-        nom: name,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      if (error.code === "23505") {
-        alert("Ce chien existe déjà.");
-      } else {
-        alert(`Erreur ajout chien : ${error.message}`);
-      }
-
-      return;
-    }
-
-    setDogs((current) =>
-      [...current, data].sort((a, b) =>
-        a.nom.localeCompare(b.nom, "fr")
-      )
-    );
-
-    setNewDogName("");
-  }
-
-  async function deleteDog(item: NamedItem) {
-    const confirmed = window.confirm(
-      `Supprimer le chien "${item.nom}" ?`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    const { error } = await supabase
-      .from("chiens")
-      .delete()
-      .eq("id", item.id);
-
-    if (error) {
-      alert(`Erreur suppression chien : ${error.message}`);
-      return;
-    }
-
-    setDogs((current) =>
-      current.filter((dog) => dog.id !== item.id)
-    );
-
-    setForm((current) => ({
-      ...current,
-      dogs: current.dogs.filter(
-        (dog) => dog !== item.nom
-      ),
-    }));
-  }
-
-  async function addSpecies() {
-    const name = newSpeciesName.trim();
-
-    if (!name) {
-      alert("Indique le nom de l'espèce.");
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("especes")
-      .insert({
-        nom: name,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      if (error.code === "23505") {
-        alert("Cette espèce existe déjà.");
-      } else {
-        alert(`Erreur ajout espèce : ${error.message}`);
-      }
-
-      return;
-    }
-
-    const nextSpecies = [...speciesList, data].sort(
-      (a, b) => a.nom.localeCompare(b.nom, "fr")
-    );
-
-    setSpeciesList(nextSpecies);
-
-    if (!species) {
-      setSpecies(data.nom);
-    }
-
-    setNewSpeciesName("");
-  }
-
-  async function deleteSpecies(item: NamedItem) {
-    const usedInTrips = trips.some((trip) =>
-      trip.harvests.some(
-        (harvest) => harvest.species === item.nom
-      )
-    );
-
-    if (usedInTrips) {
-      const confirmed = window.confirm(
-        `L'espèce "${item.nom}" est déjà présente dans une ou plusieurs sorties.\n\nLa supprimer des réglages ne supprimera pas les anciennes données.\n\nContinuer ?`
+  async function saveTrip() {
+    if (!form.date) {
+      alert(
+        "Indique la date de la sortie."
       );
 
-      if (!confirmed) {
+      return;
+    }
+
+    if (
+      !form.territory.trim()
+    ) {
+      alert(
+        "Indique le territoire."
+      );
+
+      return;
+    }
+
+    if (
+      !form.huntType.trim()
+    ) {
+      alert(
+        "Indique le type de chasse."
+      );
+
+      return;
+    }
+
+    const payload = {
+      date: form.date,
+
+      territoire:
+        form.territory.trim(),
+
+      type_chasse:
+        form.huntType.trim(),
+
+      prelevements:
+        form.harvests,
+
+      chiens:
+        form.dogs,
+
+      observations:
+        form.notes.trim(),
+
+      latitude:
+        form.latitude,
+
+      longitude:
+        form.longitude,
+    };
+
+
+    if (editingTripId) {
+      const {
+        error,
+      } = await supabase
+        .from("sorties")
+        .update(payload)
+        .eq(
+          "id",
+          editingTripId
+        );
+
+      if (error) {
+        console.error(
+          error
+        );
+
+        alert(
+          "Erreur lors de la modification."
+        );
+
         return;
       }
     } else {
-      const confirmed = window.confirm(
-        `Supprimer l'espèce "${item.nom}" ?`
-      );
-
-      if (!confirmed) {
-        return;
-      }
-    }
-
-    const { error } = await supabase
-      .from("especes")
-      .delete()
-      .eq("id", item.id);
-
-    if (error) {
-      alert(`Erreur suppression espèce : ${error.message}`);
-      return;
-    }
-
-    const remaining = speciesList.filter(
-      (current) => current.id !== item.id
-    );
-
-    setSpeciesList(remaining);
-
-    if (species === item.nom) {
-      setSpecies(
-        remaining.length > 0
-          ? remaining[0].nom
-          : ""
-      );
-    }
-  }
-
-  async function saveTrip() {
-    if (!form.territory.trim()) {
-      alert("Indique le territoire.");
-      return;
-    }
-
-    if (editingTripId) {
-      const { error } = await supabase
+      const {
+        error,
+      } = await supabase
         .from("sorties")
-        .update({
-          date: form.date,
-          territoire: form.territory.trim(),
-          type_chasse: form.huntType,
-          prelevements: form.harvests,
-          chiens: form.dogs,
-          observations: form.notes,
-          latitude: form.latitude,
-          longitude: form.longitude,
-        })
-        .eq("id", editingTripId);
+        .insert({
+          id:
+            crypto.randomUUID(),
+
+          ...payload,
+        });
 
       if (error) {
-        alert(`Erreur modification : ${error.message}`);
+        console.error(
+          error
+        );
+
+        alert(
+          "Erreur lors de l'enregistrement."
+        );
+
         return;
       }
-
-      setTrips((current) =>
-        current.map((trip) =>
-          trip.id === editingTripId
-            ? {
-                id: editingTripId,
-                ...form,
-                territory: form.territory.trim(),
-              }
-            : trip
-        )
-      );
-
-      closeForm();
-      setScreen("carnet");
-      return;
     }
-
-    const trip: HuntingTrip = {
-      ...form,
-      id: crypto.randomUUID(),
-      territory: form.territory.trim(),
-    };
-
-    const { error } = await supabase
-      .from("sorties")
-      .insert({
-        id: trip.id,
-        date: trip.date,
-        territoire: trip.territory,
-        type_chasse: trip.huntType,
-        prelevements: trip.harvests,
-        chiens: trip.dogs,
-        observations: trip.notes,
-        latitude: trip.latitude,
-        longitude: trip.longitude,
-      });
-
-    if (error) {
-      alert(`Erreur enregistrement : ${error.message}`);
-      return;
-    }
-
-    setTrips((current) => [trip, ...current]);
 
     closeForm();
-    setScreen("carnet");
+
+    await loadTrips();
   }
 
-  async function deleteTrip(id: string) {
-    const confirmed = window.confirm(
-      "Voulez-vous vraiment supprimer cette sortie ?"
-    );
+
+  async function deleteTrip(
+    id: string
+  ) {
+    const confirmed =
+      window.confirm(
+        "Supprimer cette sortie ?"
+      );
 
     if (!confirmed) {
       return;
     }
 
-    const { error } = await supabase
+    const {
+      error,
+    } = await supabase
       .from("sorties")
       .delete()
       .eq("id", id);
 
     if (error) {
-      alert(`Erreur suppression : ${error.message}`);
+      console.error(
+        error
+      );
+
+      alert(
+        "Impossible de supprimer la sortie."
+      );
+
       return;
     }
 
-    setTrips((current) =>
-      current.filter((trip) => trip.id !== id)
-    );
+    await loadTrips();
   }
+
+
+  /* =========================================================
+     RÉGLAGES CHIENS / ESPÈCES
+     ========================================================= */
+
+  async function addDog() {
+    const name =
+      newDogName.trim();
+
+    if (!name) {
+      return;
+    }
+
+    const {
+      error,
+    } = await supabase
+      .from("chiens")
+      .insert({
+        nom: name,
+      });
+
+    if (error) {
+      console.error(
+        error
+      );
+
+      alert(
+        "Impossible d'ajouter ce chien."
+      );
+
+      return;
+    }
+
+    setNewDogName("");
+
+    await loadSettings();
+  }
+
+
+  async function deleteDog(
+    dog: NamedItem
+  ) {
+    const confirmed =
+      window.confirm(
+        `Supprimer ${dog.nom} de la liste des chiens ?`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const {
+      error,
+    } = await supabase
+      .from("chiens")
+      .delete()
+      .eq(
+        "id",
+        dog.id
+      );
+
+    if (error) {
+      console.error(
+        error
+      );
+
+      alert(
+        "Impossible de supprimer ce chien."
+      );
+
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+
+      dogs:
+        current.dogs.filter(
+          (name) =>
+            name !== dog.nom
+        ),
+    }));
+
+    await loadSettings();
+  }
+
+
+  async function addSpecies() {
+    const name =
+      newSpeciesName.trim();
+
+    if (!name) {
+      return;
+    }
+
+    const {
+      error,
+    } = await supabase
+      .from("especes")
+      .insert({
+        nom: name,
+      });
+
+    if (error) {
+      console.error(
+        error
+      );
+
+      alert(
+        "Impossible d'ajouter cette espèce."
+      );
+
+      return;
+    }
+
+    setNewSpeciesName("");
+
+    await loadSettings();
+  }
+
+
+  async function deleteSpecies(
+    item: NamedItem
+  ) {
+    const confirmed =
+      window.confirm(
+        `Supprimer ${item.nom} de la liste ?\n\nLes anciennes sorties utilisant cette espèce resteront enregistrées.`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const {
+      error,
+    } = await supabase
+      .from("especes")
+      .delete()
+      .eq(
+        "id",
+        item.id
+      );
+
+    if (error) {
+      console.error(
+        error
+      );
+
+      alert(
+        "Impossible de supprimer cette espèce."
+      );
+
+      return;
+    }
+
+    await loadSettings();
+  }
+
+
+  /* =========================================================
+     ÉCRAN BIENVENUE
+     ========================================================= */
 
   if (!started) {
     return (
-      <main className="app">
+      <main className="welcome-screen">
         <section className="welcome-card">
           <div className="logo">
-  <img
-    src="/icon-512.png"
-    alt="Carnet-de-Chasse"
-  />
-</div>
+            <img
+              src="/icon-512.png"
+              alt="Carnet-de-Chasse"
+            />
+          </div>
 
           <h1>
             Carnet-de-Chasse
           </h1>
 
           <p>
-            Votre carnet de chasse numérique
+            Enregistre tes journées,
+            tes chiens,
+            tes prélèvements et
+            retrouve toute ta saison
+            dans ton carnet.
           </p>
 
           <button
-            className="start-button"
+            type="button"
             onClick={startApp}
           >
             Commencer
@@ -784,615 +1319,1386 @@ function App() {
     );
   }
 
+
+  /* =========================================================
+     APPLICATION
+     ========================================================= */
+
   return (
     <main className="app">
       <section className="dashboard">
+
+        {/* HEADER */}
+
         <header className="header">
-          <div>
-            <span className="welcome">
-              Bienvenue
-            </span>
+          <div className="header-brand">
+            <img
+              src="/icon-192.png"
+              alt=""
+            />
 
-            <h1>
-              Carnet-de-Chasse
-            </h1>
-          </div>
+            <div>
+              <small>
+                Carnet
+              </small>
 
-          <button
-  className="profile-button"
-  onClick={() => setScreen("settings")}
-  title="Réglages"
->
-  <Settings size={24} strokeWidth={1.7} />
-</button>
-        </header>
-
-        <section className="screen-content">
-          {screen === "home" && (
-  <>
-    {/* SAISON */}
-    <section className="new-season-card">
-      <div className="new-season-icon">
-        <CalendarDays size={27} strokeWidth={1.8} />
-      </div>
-
-      <div className="new-season-text">
-        <span>SAISON ACTUELLE</span>
-        <strong>2026 — 2027</strong>
-      </div>
-
-      <TreePine
-        className="new-season-tree tree-one"
-        size={92}
-        strokeWidth={1}
-      />
-
-      <TreePine
-        className="new-season-tree tree-two"
-        size={70}
-        strokeWidth={1}
-      />
-    </section>
-
-    {/* NOUVELLE SORTIE */}
-    <section className="new-trip-hero">
-      <div className="hero-top">
-        <div className="hero-illustration">
-          <TreePine size={43} strokeWidth={1.5} />
-          <Dog size={34} strokeWidth={1.5} />
-        </div>
-
-        <div className="hero-copy">
-          <h2>
-            Prêt pour une
-            <br />
-            nouvelle sortie ?
-          </h2>
-
-          <p>
-            Enregistre ta journée, tes chiens,
-            tes prélèvements et ta position.
-          </p>
-        </div>
-      </div>
-
-      <button
-        className="new-trip-main-button"
-        onClick={newTrip}
-      >
-        <span className="new-trip-plus">
-          <Plus size={25} strokeWidth={2.2} />
-        </span>
-
-        Nouvelle sortie
-      </button>
-    </section>
-
-    {/* MA SAISON */}
-    <div className="new-section-heading">
-      <h2>MA SAISON</h2>
-
-      <button
-        type="button"
-        onClick={() => setScreen("stats")}
-      >
-        Voir les stats
-        <ChevronRight size={17} />
-      </button>
-    </div>
-
-    <section className="new-season-stats">
-      <div className="new-stat-box">
-        <div className="new-stat-icon">
-          <NotebookText size={23} />
-        </div>
-
-        <strong>{trips.length}</strong>
-        <span>Sorties</span>
-      </div>
-
-      <div className="new-stat-box">
-        <div className="new-stat-icon brown">
-          <Target size={23} />
-        </div>
-
-        <strong>{totalHarvests}</strong>
-        <span>Prélèvements</span>
-      </div>
-
-      <div className="new-stat-box">
-        <div className="new-stat-icon">
-          <Dog size={23} />
-        </div>
-
-        <strong className="new-stat-word">
-          {favoriteDog?.name || "—"}
-        </strong>
-
-        <span>Chien le + utilisé</span>
-      </div>
-
-      <div className="new-stat-box">
-        <div className="new-stat-icon brown">
-          <MapPin size={23} />
-        </div>
-
-        <strong className="new-stat-word">
-          {favoriteTerritory?.name || "—"}
-        </strong>
-
-        <span>Territoire favori</span>
-      </div>
-    </section>
-
-    {/* DERNIÈRE SORTIE */}
-    <div className="new-section-heading">
-      <h2>DERNIÈRE SORTIE</h2>
-
-      {trips.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setScreen("carnet")}
-        >
-          Voir le carnet
-          <ChevronRight size={17} />
-        </button>
-      )}
-    </div>
-
-    {trips.length === 0 ? (
-      <section className="new-last-trip empty">
-        <NotebookText size={34} />
-
-        <div>
-          <strong>Aucune sortie enregistrée</strong>
-          <p>
-            Ta prochaine journée apparaîtra ici.
-          </p>
-        </div>
-      </section>
-    ) : (
-      <section className="new-last-trip">
-        <div className="new-last-header">
-          <div className="date-square">
-            <span>
-              {new Date(
-                trips[0].date + "T12:00:00"
-              )
-                .toLocaleDateString("fr-FR", {
-                  weekday: "short",
-                })
-                .replace(".", "")
-                .toUpperCase()}
-            </span>
-
-            <strong>
-              {new Date(
-                trips[0].date + "T12:00:00"
-              )
-                .getDate()
-                .toString()
-                .padStart(2, "0")}
-            </strong>
-
-            <small>
-              {new Date(
-                trips[0].date + "T12:00:00"
-              )
-                .toLocaleDateString("fr-FR", {
-                  month: "short",
-                })
-                .replace(".", "")
-                .toUpperCase()}
-            </small>
-          </div>
-
-          <div className="new-last-title">
-            <strong>
-              {new Date(
-                trips[0].date + "T12:00:00"
-              ).toLocaleDateString("fr-FR", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </strong>
-
-            <div className="new-last-meta">
-              <span>
-                <MapPin size={16} />
-                Territoire :{" "}
-                <b>{trips[0].territory}</b>
-              </span>
-
-              <span>
-                <Crosshair size={16} />
-                Type de chasse :{" "}
-                <b>{trips[0].huntType}</b>
-              </span>
+              <strong>
+                de Chasse
+              </strong>
             </div>
           </div>
 
           <button
-            className="new-edit-button"
+            className="profile-button"
             type="button"
-            onClick={() => editTrip(trips[0])}
+            onClick={() =>
+              setScreen(
+                "settings"
+              )
+            }
+            title="Réglages"
           >
-            <Pencil size={19} />
+            <Settings
+              size={24}
+              strokeWidth={1.7}
+            />
           </button>
-        </div>
+        </header>
 
-        <div className="new-last-line">
-          <div className="new-last-label">
-            <Target size={20} />
-            <span>Prélèvements</span>
-          </div>
 
-          <div className="new-last-value">
-            {trips[0].harvests.length > 0
-              ? trips[0].harvests
-                  .map(
-                    (item) =>
-                      `${item.species} ×${item.quantity}`
-                  )
-                  .join(", ")
-              : "Aucun prélèvement"}
-          </div>
-        </div>
+        <section className="screen-content">
 
-        <div className="new-last-line">
-          <div className="new-last-label">
-            <Dog size={20} />
-            <span>Chiens</span>
-          </div>
+          {/* =================================================
+              ACCUEIL
+              ================================================= */}
 
-          <div className="new-last-value">
-            {trips[0].dogs.length > 0
-              ? trips[0].dogs.join(", ")
-              : "Aucun chien"}
-          </div>
-        </div>
-
-        <button
-          className="new-open-carnet"
-          type="button"
-          onClick={() => setScreen("carnet")}
-        >
-          <BookOpen size={20} />
-          <span>Ouvrir mon carnet</span>
-          <ChevronRight size={20} />
-        </button>
-      </section>
-    )}
-
-    {/* ACCÈS RAPIDES */}
-    <div className="new-section-heading quick-heading">
-      <h2>ACCÈS RAPIDES</h2>
-    </div>
-
-    <section className="new-quick-grid">
-      <button
-        type="button"
-        onClick={() => setScreen("carnet")}
-      >
-        <div className="quick-icon">
-          <BookOpen size={26} />
-        </div>
-
-        <strong>Mon carnet</strong>
-        <span>Mes sorties</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setScreen("map")}
-      >
-        <div className="quick-icon">
-          <MapPin size={26} />
-        </div>
-
-        <strong>Ma carte</strong>
-        <span>Mes positions</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setScreen("stats")}
-      >
-        <div className="quick-icon">
-          <BarChart3 size={26} />
-        </div>
-
-        <strong>Statistiques</strong>
-        <span>Ma saison</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setScreen("settings")}
-      >
-        <div className="quick-icon">
-          <Settings size={26} />
-        </div>
-
-        <strong>Réglages</strong>
-        <span>Chiens & espèces</span>
-      </button>
-    </section>
-  </>
-)}
-
-          {screen === "carnet" && (
+          {screen === "home" && (
             <>
-              <div className="page-title">
-                <h2>
-                  Mon carnet
-                </h2>
 
-                <button
-                  className="action-button"
-                  onClick={newTrip}
-                >
-                  ＋ Ajouter
-                </button>
-              </div>
+              {/* SAISON */}
 
-              {loadingTrips ? (
-                <div className="stat-card">
+              <section className="new-season-card">
+                <div className="new-season-icon">
+                  <CalendarDays
+                    size={27}
+                    strokeWidth={1.8}
+                  />
+                </div>
+
+                <div className="new-season-text">
+                  <span>
+                    SAISON ACTUELLE
+                  </span>
+
                   <strong>
-                    Chargement...
+                    2026 — 2027
                   </strong>
                 </div>
-              ) : trips.length === 0 ? (
-                <div className="stat-card">
-                  <strong>
-                    Aucune sortie
-                  </strong>
 
-                  <small>
-                    Enregistrez votre première journée de chasse.
-                  </small>
-                </div>
-              ) : (
-                trips.map((trip) => (
-                  <article
-                    className="stat-card"
-                    key={trip.id}
-                  >
-                    <strong>
-                      {new Date(
-                        trip.date + "T12:00:00"
-                      ).toLocaleDateString("fr-FR")}
-                    </strong>
+                <TreePine
+                  className="new-season-tree tree-one"
+                  size={92}
+                  strokeWidth={1}
+                />
 
-                    <small>
-                      📍 {trip.territory}
-                    </small>
-
-                    <small>
-                      🏹 {trip.huntType}
-                    </small>
-
-                    <small>
-                      🎯{" "}
-                      {trip.harvests.length
-                        ? trip.harvests
-                            .map(
-                              (item) =>
-                                `${item.species} ×${item.quantity}`
-                            )
-                            .join(", ")
-                        : "Aucun prélèvement"}
-                    </small>
-
-                    {trip.dogs.length > 0 && (
-                      <small>
-                        🐕 {trip.dogs.join(", ")}
-                      </small>
-                    )}
-
-                    {trip.latitude != null &&
-                      trip.longitude != null && (
-                        <small>
-                          📌 Position GPS enregistrée
-                        </small>
-                      )}
-
-                    {trip.notes && (
-                      <small>
-                        📝 {trip.notes}
-                      </small>
-                    )}
-
-                    <div className="form-actions">
-                      <button
-                        onClick={() =>
-                          editTrip(trip)
-                        }
-                      >
-                        ✏️ Modifier
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          deleteTrip(trip.id)
-                        }
-                      >
-                        🗑️ Supprimer
-                      </button>
-                    </div>
-                  </article>
-                ))
-              )}
-            </>
-          )}
-
-          {screen === "map" && (
-            <>
-              <div className="page-title">
-                <h2>
-                  🗺️ Carte
-                </h2>
-
-                <button
-                  className="action-button"
-                  onClick={findMeOnMap}
-                  disabled={locatingOnMap}
-                >
-                  {locatingOnMap
-                    ? "📍 Recherche..."
-                    : "📍 Ma position"}
-                </button>
-              </div>
-
-              <div className="stat-card">
-                <strong>
-                  {geolocatedTrips.length}
-                </strong>
-
-                <small>
-                  sortie
-                  {geolocatedTrips.length > 1 ? "s" : ""} géolocalisée
-                  {geolocatedTrips.length > 1 ? "s" : ""}
-                </small>
-              </div>
-
-              {geolocatedTrips.length === 0 &&
-              !userPosition ? (
-                <div className="stat-card">
-                  <strong>
-                    Aucune position
-                  </strong>
-
-                  <small>
-                    Ajoutez une position GPS à une sortie.
-                  </small>
-                </div>
-              ) : (
-                <div className="map-wrapper">
-                  <MapContainer
-                    center={[
-                      geolocatedTrips[0]?.latitude ??
-                        userPosition?.latitude ??
-                        46.603354,
-                      geolocatedTrips[0]?.longitude ??
-                        userPosition?.longitude ??
-                        1.888334,
-                    ]}
-                    zoom={12}
-                    style={{
-                      height: "100%",
-                      width: "100%",
-                    }}
-                  >
-                    <TileLayer
-                      attribution="&copy; OpenStreetMap contributors"
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-
-                    <MapAutoFit
-                      trips={geolocatedTrips}
-                      userPosition={userPosition}
-                    />
-
-                    {geolocatedTrips.map((trip) => (
-                      <Marker
-                        key={trip.id}
-                        position={[
-                          trip.latitude as number,
-                          trip.longitude as number,
-                        ]}
-                      >
-                        <Popup>
-                          <strong>
-                            📍 {trip.territory}
-                          </strong>
-
-                          <p>
-                            📅{" "}
-                            {new Date(
-                              trip.date + "T12:00:00"
-                            ).toLocaleDateString("fr-FR")}
-                          </p>
-
-                          <p>
-                            🏹 {trip.huntType}
-                          </p>
-
-                          <p>
-                            🎯{" "}
-                            {trip.harvests.length
-                              ? trip.harvests
-                                  .map(
-                                    (item) =>
-                                      `${item.species} ×${item.quantity}`
-                                  )
-                                  .join(", ")
-                              : "Aucun prélèvement"}
-                          </p>
-
-                          {trip.dogs.length > 0 && (
-                            <p>
-                              🐕 {trip.dogs.join(", ")}
-                            </p>
-                          )}
-
-                          <button
-                            onClick={() =>
-                              editTrip(trip)
-                            }
-                          >
-                            ✏️ Modifier
-                          </button>
-                        </Popup>
-                      </Marker>
-                    ))}
-
-                    {userPosition && (
-                      <CircleMarker
-                        center={[
-                          userPosition.latitude,
-                          userPosition.longitude,
-                        ]}
-                        radius={10}
-                      >
-                        <Popup>
-                          📍 Ma position actuelle
-                        </Popup>
-                      </CircleMarker>
-                    )}
-                  </MapContainer>
-                </div>
-              )}
-            </>
-          )}
-
-          {screen === "stats" && (
-            <>
-              <h2>
-                📊 Statistiques
-              </h2>
-
-              <section className="season-card">
-                <span>
-                  Saison actuelle
-                </span>
-
-                <strong>
-                  2026 — 2027
-                </strong>
+                <TreePine
+                  className="new-season-tree tree-two"
+                  size={70}
+                  strokeWidth={1}
+                />
               </section>
 
-              <h3>
-                Vue générale
-              </h3>
+
+              {/* NOUVELLE SORTIE */}
+
+              <section className="new-trip-hero">
+                <div className="hero-top">
+
+                  <div className="hero-illustration">
+                    <TreePine
+                      size={43}
+                      strokeWidth={1.5}
+                    />
+
+                    <Dog
+                      size={34}
+                      strokeWidth={1.5}
+                    />
+                  </div>
+
+                  <div className="hero-copy">
+                    <h2>
+                      Prêt pour une
+                      <br />
+                      nouvelle sortie ?
+                    </h2>
+
+                    <p>
+                      Enregistre ta journée,
+                      tes chiens,
+                      tes prélèvements et
+                      ta position.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  className="new-trip-main-button"
+                  type="button"
+                  onClick={newTrip}
+                >
+                  <span className="new-trip-plus">
+                    <Plus
+                      size={25}
+                      strokeWidth={2.2}
+                    />
+                  </span>
+
+                  Nouvelle sortie
+                </button>
+              </section>
+
+
+              {/* MA SAISON */}
+
+              <div className="new-section-heading">
+                <h2>
+                  MA SAISON
+                </h2>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setScreen(
+                      "stats"
+                    )
+                  }
+                >
+                  Voir les stats
+
+                  <ChevronRight
+                    size={17}
+                  />
+                </button>
+              </div>
+
+
+              <section className="new-season-stats">
+
+                <div className="new-stat-box">
+                  <div className="new-stat-icon">
+                    <NotebookText
+                      size={23}
+                    />
+                  </div>
+
+                  <strong>
+                    {trips.length}
+                  </strong>
+
+                  <span>
+                    Sorties
+                  </span>
+                </div>
+
+
+                <div className="new-stat-box">
+                  <div className="new-stat-icon brown">
+                    <Target
+                      size={23}
+                    />
+                  </div>
+
+                  <strong>
+                    {totalHarvests}
+                  </strong>
+
+                  <span>
+                    Prélèvements
+                  </span>
+                </div>
+
+
+                <div className="new-stat-box">
+                  <div className="new-stat-icon">
+                    <Dog
+                      size={23}
+                    />
+                  </div>
+
+                  <strong className="new-stat-word">
+                    {favoriteDog
+                      ?.name ||
+                      "—"}
+                  </strong>
+
+                  <span>
+                    Chien le + utilisé
+                  </span>
+                </div>
+
+
+                <div className="new-stat-box">
+                  <div className="new-stat-icon brown">
+                    <MapPin
+                      size={23}
+                    />
+                  </div>
+
+                  <strong className="new-stat-word">
+                    {favoriteTerritory
+                      ?.name ||
+                      "—"}
+                  </strong>
+
+                  <span>
+                    Territoire favori
+                  </span>
+                </div>
+              </section>
+
+
+              {/* DERNIÈRE SORTIE */}
+
+              <div className="new-section-heading">
+                <h2>
+                  DERNIÈRE SORTIE
+                </h2>
+
+                {trips.length >
+                  0 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setScreen(
+                        "carnet"
+                      )
+                    }
+                  >
+                    Voir le carnet
+
+                    <ChevronRight
+                      size={17}
+                    />
+                  </button>
+                )}
+              </div>
+
+
+              {trips.length ===
+              0 ? (
+                <section className="new-last-trip empty">
+                  <NotebookText
+                    size={34}
+                  />
+
+                  <div>
+                    <strong>
+                      Aucune sortie
+                      enregistrée
+                    </strong>
+
+                    <p>
+                      Ta prochaine
+                      journée apparaîtra
+                      ici.
+                    </p>
+                  </div>
+                </section>
+              ) : (
+                <section className="new-last-trip">
+
+                  <div className="new-last-header">
+
+                    <div className="date-square">
+                      <span>
+                        {new Date(
+                          trips[0]
+                            .date +
+                            "T12:00:00"
+                        )
+                          .toLocaleDateString(
+                            "fr-FR",
+                            {
+                              weekday:
+                                "short",
+                            }
+                          )
+                          .replace(
+                            ".",
+                            ""
+                          )
+                          .toUpperCase()}
+                      </span>
+
+                      <strong>
+                        {new Date(
+                          trips[0]
+                            .date +
+                            "T12:00:00"
+                        )
+                          .getDate()
+                          .toString()
+                          .padStart(
+                            2,
+                            "0"
+                          )}
+                      </strong>
+
+                      <small>
+                        {new Date(
+                          trips[0]
+                            .date +
+                            "T12:00:00"
+                        )
+                          .toLocaleDateString(
+                            "fr-FR",
+                            {
+                              month:
+                                "short",
+                            }
+                          )
+                          .replace(
+                            ".",
+                            ""
+                          )
+                          .toUpperCase()}
+                      </small>
+                    </div>
+
+
+                    <div className="new-last-title">
+                      <strong>
+                        {new Date(
+                          trips[0]
+                            .date +
+                            "T12:00:00"
+                        ).toLocaleDateString(
+                          "fr-FR",
+                          {
+                            weekday:
+                              "long",
+
+                            day:
+                              "numeric",
+
+                            month:
+                              "long",
+
+                            year:
+                              "numeric",
+                          }
+                        )}
+                      </strong>
+
+                      <div className="new-last-meta">
+                        <span>
+                          <MapPin
+                            size={16}
+                          />
+
+                          Territoire :{" "}
+
+                          <b>
+                            {
+                              trips[0]
+                                .territory
+                            }
+                          </b>
+                        </span>
+
+                        <span>
+                          <Crosshair
+                            size={16}
+                          />
+
+                          Type de chasse :{" "}
+
+                          <b>
+                            {
+                              trips[0]
+                                .huntType
+                            }
+                          </b>
+                        </span>
+                      </div>
+                    </div>
+
+
+                    <button
+                      className="new-edit-button"
+                      type="button"
+                      onClick={() =>
+                        editTrip(
+                          trips[0]
+                        )
+                      }
+                    >
+                      <Pencil
+                        size={19}
+                      />
+                    </button>
+
+                  </div>
+
+
+                  <div className="new-last-line">
+                    <div className="new-last-label">
+                      <Target
+                        size={20}
+                      />
+
+                      <span>
+                        Prélèvements
+                      </span>
+                    </div>
+
+                    <div className="new-last-value">
+                      {trips[0]
+                        .harvests
+                        .length > 0
+                        ? trips[0]
+                            .harvests
+                            .map(
+                              (
+                                item
+                              ) =>
+                                `${item.species} ×${item.quantity}`
+                            )
+                            .join(
+                              ", "
+                            )
+                        : "Aucun prélèvement"}
+                    </div>
+                  </div>
+
+
+                  <div className="new-last-line">
+                    <div className="new-last-label">
+                      <Dog
+                        size={20}
+                      />
+
+                      <span>
+                        Chiens
+                      </span>
+                    </div>
+
+                    <div className="new-last-value">
+                      {trips[0]
+                        .dogs
+                        .length > 0
+                        ? trips[0]
+                            .dogs
+                            .join(
+                              ", "
+                            )
+                        : "Aucun chien"}
+                    </div>
+                  </div>
+
+
+                  <button
+                    className="new-open-carnet"
+                    type="button"
+                    onClick={() =>
+                      setScreen(
+                        "carnet"
+                      )
+                    }
+                  >
+                    <BookOpen
+                      size={20}
+                    />
+
+                    <span>
+                      Ouvrir mon carnet
+                    </span>
+
+                    <ChevronRight
+                      size={20}
+                    />
+                  </button>
+
+                </section>
+              )}
+
+
+              {/* ACCÈS RAPIDES */}
+
+              <div className="new-section-heading quick-heading">
+                <h2>
+                  ACCÈS RAPIDES
+                </h2>
+              </div>
+
+
+              <section className="new-quick-grid">
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setScreen(
+                      "carnet"
+                    )
+                  }
+                >
+                  <div className="quick-icon">
+                    <BookOpen
+                      size={26}
+                    />
+                  </div>
+
+                  <strong>
+                    Mon carnet
+                  </strong>
+
+                  <span>
+                    Mes sorties
+                  </span>
+                </button>
+
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setScreen(
+                      "map"
+                    )
+                  }
+                >
+                  <div className="quick-icon">
+                    <MapPin
+                      size={26}
+                    />
+                  </div>
+
+                  <strong>
+                    Ma carte
+                  </strong>
+
+                  <span>
+                    Mes positions
+                  </span>
+                </button>
+
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setScreen(
+                      "stats"
+                    )
+                  }
+                >
+                  <div className="quick-icon">
+                    <BarChart3
+                      size={26}
+                    />
+                  </div>
+
+                  <strong>
+                    Statistiques
+                  </strong>
+
+                  <span>
+                    Ma saison
+                  </span>
+                </button>
+
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setScreen(
+                      "settings"
+                    )
+                  }
+                >
+                  <div className="quick-icon">
+                    <Settings
+                      size={26}
+                    />
+                  </div>
+
+                  <strong>
+                    Réglages
+                  </strong>
+
+                  <span>
+                    Chiens & espèces
+                  </span>
+                </button>
+
+              </section>
+            </>
+          )}
+
+
+          {/* =================================================
+              CARNET
+              ================================================= */}
+
+          {screen ===
+            "carnet" && (
+            <section className="carnet-page">
+
+              <div className="carnet-heading">
+                <div>
+                  <span className="carnet-eyebrow">
+                    MES JOURNÉES
+                  </span>
+
+                  <h1>
+                    Mon carnet
+                  </h1>
+
+                  <p>
+                    {trips.length}{" "}
+
+                    {trips.length >
+                    1
+                      ? "sorties enregistrées"
+                      : "sortie enregistrée"}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="carnet-add"
+                  onClick={newTrip}
+                >
+                  <Plus
+                    size={21}
+                  />
+
+                  <span>
+                    Nouvelle sortie
+                  </span>
+                </button>
+              </div>
+
+
+              {/* RECHERCHE */}
+
+              <div className="carnet-search">
+                <Search
+                  size={20}
+                />
+
+                <input
+                  type="search"
+                  placeholder="Territoire, chien, espèce..."
+                  value={
+                    tripSearch
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setTripSearch(
+                      event
+                        .target
+                        .value
+                    )
+                  }
+                />
+              </div>
+
+
+              {/* FILTRES */}
+
+              <div className="carnet-filter-title">
+                <SlidersHorizontal
+                  size={16}
+                />
+
+                <span>
+                  Filtrer par type
+                  de chasse
+                </span>
+              </div>
+
+
+              <div className="carnet-filters">
+                {[
+                  "Tous",
+
+                  ...Array.from(
+                    new Set(
+                      trips
+                        .map(
+                          (
+                            trip
+                          ) =>
+                            trip.huntType
+                        )
+                        .filter(
+                          Boolean
+                        )
+                    )
+                  ),
+                ].map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    className={
+                      huntTypeFilter ===
+                      type
+                        ? "active"
+                        : ""
+                    }
+                    onClick={() =>
+                      setHuntTypeFilter(
+                        type
+                      )
+                    }
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+
+
+              {/* RÉSULTATS */}
+
+              <div className="carnet-results-heading">
+                <strong>
+                  {
+                    filteredTrips.length
+                  }{" "}
+
+                  {filteredTrips.length >
+                  1
+                    ? "sorties"
+                    : "sortie"}
+                </strong>
+
+                {(tripSearch ||
+                  huntTypeFilter !==
+                    "Tous") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTripSearch(
+                        ""
+                      );
+
+                      setHuntTypeFilter(
+                        "Tous"
+                      );
+                    }}
+                  >
+                    Effacer les
+                    filtres
+                  </button>
+                )}
+              </div>
+
+
+              {/* CHARGEMENT */}
+
+              {loadingTrips && (
+                <div className="carnet-empty">
+                  <div className="carnet-empty-icon">
+                    <CalendarDays
+                      size={30}
+                    />
+                  </div>
+
+                  <strong>
+                    Chargement du
+                    carnet...
+                  </strong>
+                </div>
+              )}
+
+
+              {/* VIDE */}
+
+              {!loadingTrips &&
+                filteredTrips.length ===
+                  0 && (
+                  <div className="carnet-empty">
+
+                    <div className="carnet-empty-icon">
+                      <Search
+                        size={30}
+                      />
+                    </div>
+
+                    <strong>
+                      {trips.length ===
+                      0
+                        ? "Ton carnet est vide"
+                        : "Aucune sortie trouvée"}
+                    </strong>
+
+                    <p>
+                      {trips.length ===
+                      0
+                        ? "Enregistre ta première journée de chasse."
+                        : "Essaie une autre recherche ou modifie les filtres."}
+                    </p>
+
+                    {trips.length ===
+                      0 && (
+                      <button
+                        type="button"
+                        onClick={
+                          newTrip
+                        }
+                      >
+                        <Plus
+                          size={19}
+                        />
+
+                        Première
+                        sortie
+                      </button>
+                    )}
+
+                  </div>
+                )}
+
+
+              {/* CARTES */}
+
+              {!loadingTrips &&
+                filteredTrips.map(
+                  (trip) => (
+                    <article
+                      className="carnet-trip-card"
+                      key={
+                        trip.id
+                      }
+                    >
+
+                      <div className="carnet-trip-top">
+
+                        <div className="carnet-date-box">
+                          <span>
+                            {new Date(
+                              trip.date +
+                                "T12:00:00"
+                            )
+                              .toLocaleDateString(
+                                "fr-FR",
+                                {
+                                  weekday:
+                                    "short",
+                                }
+                              )
+                              .replace(
+                                ".",
+                                ""
+                              )
+                              .toUpperCase()}
+                          </span>
+
+                          <strong>
+                            {new Date(
+                              trip.date +
+                                "T12:00:00"
+                            )
+                              .getDate()
+                              .toString()
+                              .padStart(
+                                2,
+                                "0"
+                              )}
+                          </strong>
+
+                          <small>
+                            {new Date(
+                              trip.date +
+                                "T12:00:00"
+                            )
+                              .toLocaleDateString(
+                                "fr-FR",
+                                {
+                                  month:
+                                    "short",
+                                }
+                              )
+                              .replace(
+                                ".",
+                                ""
+                              )
+                              .toUpperCase()}
+                          </small>
+                        </div>
+
+
+                        <div className="carnet-trip-main">
+
+                          <span className="carnet-trip-type">
+                            {
+                              trip.huntType
+                            }
+                          </span>
+
+                          <h2>
+                            {
+                              trip.territory
+                            }
+                          </h2>
+
+                          <div className="carnet-trip-date">
+                            <CalendarDays
+                              size={
+                                15
+                              }
+                            />
+
+                            {new Date(
+                              trip.date +
+                                "T12:00:00"
+                            ).toLocaleDateString(
+                              "fr-FR",
+                              {
+                                weekday:
+                                  "long",
+
+                                day:
+                                  "numeric",
+
+                                month:
+                                  "long",
+
+                                year:
+                                  "numeric",
+                              }
+                            )}
+                          </div>
+
+                        </div>
+
+
+                        <button
+                          type="button"
+                          className="carnet-edit"
+                          aria-label="Modifier la sortie"
+                          onClick={() =>
+                            editTrip(
+                              trip
+                            )
+                          }
+                        >
+                          <Pencil
+                            size={
+                              18
+                            }
+                          />
+                        </button>
+
+                      </div>
+
+
+                      {/* INFORMATIONS */}
+
+                      <div className="carnet-trip-info">
+
+                        <div className="carnet-info-row">
+
+                          <div className="carnet-info-icon">
+                            <Target
+                              size={
+                                19
+                              }
+                            />
+                          </div>
+
+                          <div>
+                            <span>
+                              Prélèvements
+                            </span>
+
+                            {trip
+                              .harvests
+                              .length >
+                            0 ? (
+                              <div className="carnet-harvests">
+                                {trip.harvests.map(
+                                  (
+                                    harvest
+                                  ) => (
+                                    <span
+                                      key={
+                                        harvest.species
+                                      }
+                                    >
+                                      {
+                                        harvest.species
+                                      }
+
+                                      <b>
+                                        ×
+                                        {
+                                          harvest.quantity
+                                        }
+                                      </b>
+                                    </span>
+                                  )
+                                )}
+                              </div>
+                            ) : (
+                              <p>
+                                Aucun
+                                prélèvement
+                              </p>
+                            )}
+                          </div>
+
+                        </div>
+
+
+                        <div className="carnet-info-row">
+
+                          <div className="carnet-info-icon">
+                            <Dog
+                              size={
+                                19
+                              }
+                            />
+                          </div>
+
+                          <div>
+                            <span>
+                              Chiens
+                            </span>
+
+                            <p>
+                              {trip
+                                .dogs
+                                .length >
+                              0
+                                ? trip.dogs.join(
+                                    " • "
+                                  )
+                                : "Aucun chien"}
+                            </p>
+                          </div>
+
+                        </div>
+
+
+                        {trip.latitude !=
+                          null &&
+                          trip.longitude !=
+                            null && (
+                            <div className="carnet-info-row">
+
+                              <div className="carnet-info-icon">
+                                <MapPin
+                                  size={
+                                    19
+                                  }
+                                />
+                              </div>
+
+                              <div>
+                                <span>
+                                  Position GPS
+                                </span>
+
+                                <p>
+                                  Position
+                                  enregistrée
+                                </p>
+                              </div>
+
+                            </div>
+                          )}
+
+                      </div>
+
+
+                      {/* NOTES */}
+
+                      {trip.notes && (
+                        <div className="carnet-notes">
+                          <span>
+                            Notes
+                          </span>
+
+                          <p>
+                            {
+                              trip.notes
+                            }
+                          </p>
+                        </div>
+                      )}
+
+
+                      {/* ACTIONS */}
+
+                      <div className="carnet-actions">
+
+                        <button
+                          type="button"
+                          className="carnet-modify"
+                          onClick={() =>
+                            editTrip(
+                              trip
+                            )
+                          }
+                        >
+                          <Pencil
+                            size={
+                              17
+                            }
+                          />
+
+                          Modifier
+                        </button>
+
+
+                        <button
+                          type="button"
+                          className="carnet-delete"
+                          onClick={() =>
+                            deleteTrip(
+                              trip.id
+                            )
+                          }
+                        >
+                          <Trash2
+                            size={
+                              17
+                            }
+                          />
+
+                          Supprimer
+                        </button>
+
+                      </div>
+
+                    </article>
+                  )
+                )}
+
+            </section>
+          )}
+
+
+          {/* =================================================
+              CARTE
+              ================================================= */}
+
+          {screen === "map" && (
+            <section className="map-screen">
+
+              <div className="page-heading">
+                <div>
+                  <span className="carnet-eyebrow">
+                    MES POSITIONS
+                  </span>
+
+                  <h1>
+                    Ma carte
+                  </h1>
+
+                  <p>
+                    Retrouve tes
+                    journées
+                    géolocalisées.
+                  </p>
+                </div>
+              </div>
+
+
+              <button
+                type="button"
+                className="primary-button"
+                onClick={
+                  findMeOnMap
+                }
+              >
+                <MapPin
+                  size={19}
+                />
+
+                {locatingOnMap
+                  ? "Localisation..."
+                  : "Ma position"}
+              </button>
+
+
+              <div className="map-wrapper">
+
+                <MapContainer
+                  center={[
+                    47.2,
+                    -0.5,
+                  ]}
+                  zoom={8}
+                  style={{
+                    width: "100%",
+                    height: "460px",
+                  }}
+                >
+
+                  <TileLayer
+                    attribution='&copy; OpenStreetMap contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+
+
+                  <MapAutoFit
+                    trips={trips}
+                    userPosition={
+                      userPosition
+                    }
+                  />
+
+
+                  {trips
+                    .filter(
+                      (trip) =>
+                        trip.latitude !=
+                          null &&
+                        trip.longitude !=
+                          null
+                    )
+                    .map(
+                      (trip) => (
+                        <Marker
+                          key={
+                            trip.id
+                          }
+                          position={[
+                            trip.latitude as number,
+                            trip.longitude as number,
+                          ]}
+                        >
+                          <Popup>
+                            <div className="map-popup">
+
+                              <strong>
+                                {
+                                  trip.territory
+                                }
+                              </strong>
+
+                              <p>
+                                {new Date(
+                                  trip.date +
+                                    "T12:00:00"
+                                ).toLocaleDateString(
+                                  "fr-FR"
+                                )}
+                              </p>
+
+                              <p>
+                                {
+                                  trip.huntType
+                                }
+                              </p>
+
+                              <p>
+                                <b>
+                                  Prélèvements :
+                                </b>{" "}
+
+                                {trip
+                                  .harvests
+                                  .length
+                                  ? trip.harvests
+                                      .map(
+                                        (
+                                          harvest
+                                        ) =>
+                                          `${harvest.species} ×${harvest.quantity}`
+                                      )
+                                      .join(
+                                        ", "
+                                      )
+                                  : "Aucun"}
+                              </p>
+
+                              <p>
+                                <b>
+                                  Chiens :
+                                </b>{" "}
+
+                                {trip
+                                  .dogs
+                                  .length
+                                  ? trip.dogs.join(
+                                      ", "
+                                    )
+                                  : "Aucun"}
+                              </p>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  editTrip(
+                                    trip
+                                  )
+                                }
+                              >
+                                Modifier
+                              </button>
+
+                            </div>
+                          </Popup>
+                        </Marker>
+                      )
+                    )}
+
+
+                  {userPosition && (
+                    <CircleMarker
+                      center={[
+                        userPosition.latitude,
+                        userPosition.longitude,
+                      ]}
+                      radius={9}
+                    >
+                      <Popup>
+                        Ma position
+                      </Popup>
+                    </CircleMarker>
+                  )}
+
+                </MapContainer>
+
+              </div>
+            </section>
+          )}
+
+
+          {/* =================================================
+              STATISTIQUES
+              ================================================= */}
+
+          {screen ===
+            "stats" && (
+            <section className="stats-screen">
+
+              <div className="page-heading">
+                <span className="carnet-eyebrow">
+                  MA SAISON
+                </span>
+
+                <h1>
+                  Statistiques
+                </h1>
+
+                <p>
+                  Vue d'ensemble
+                  de ton carnet.
+                </p>
+              </div>
+
 
               <div className="stats-grid">
+
                 <div className="stat-card">
-                  <span>
-                    📖
-                  </span>
+                  <BookOpen
+                    size={24}
+                  />
 
                   <strong>
                     {trips.length}
@@ -1403,13 +2709,16 @@ function App() {
                   </small>
                 </div>
 
+
                 <div className="stat-card">
-                  <span>
-                    🎯
-                  </span>
+                  <Target
+                    size={24}
+                  />
 
                   <strong>
-                    {totalHarvests}
+                    {
+                      totalHarvests
+                    }
                   </strong>
 
                   <small>
@@ -1417,13 +2726,16 @@ function App() {
                   </small>
                 </div>
 
+
                 <div className="stat-card">
-                  <span>
-                    🐕
-                  </span>
+                  <Dog
+                    size={24}
+                  />
 
                   <strong>
-                    {dogStats.length}
+                    {
+                      dogStats.length
+                    }
                   </strong>
 
                   <small>
@@ -1431,594 +2743,1002 @@ function App() {
                   </small>
                 </div>
 
+
                 <div className="stat-card">
-                  <span>
-                    📍
-                  </span>
+                  <MapPin
+                    size={24}
+                  />
 
                   <strong>
-                    {territoryStats.length}
+                    {
+                      territoryStats.length
+                    }
                   </strong>
 
                   <small>
                     Territoires
                   </small>
                 </div>
+
               </div>
 
-              <h3>
-                🏆 Mes favoris
-              </h3>
 
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <span>
-                    🦌
-                  </span>
+              <div className="stats-highlight-grid">
+
+                <div className="stats-highlight">
+                  <small>
+                    Espèce la +
+                    prélevée
+                  </small>
 
                   <strong>
-                    {favoriteSpecies?.name || "—"}
+                    {favoriteSpecies
+                      ?.name ||
+                      "—"}
                   </strong>
 
-                  <small>
-                    Espèce la plus prélevée
-                  </small>
+                  <span>
+                    {favoriteSpecies
+                      ? `${favoriteSpecies.count} prélèvement(s)`
+                      : ""}
+                  </span>
                 </div>
 
-                <div className="stat-card">
-                  <span>
-                    🐕
-                  </span>
+
+                <div className="stats-highlight">
+                  <small>
+                    Chien le +
+                    utilisé
+                  </small>
 
                   <strong>
-                    {favoriteDog?.name || "—"}
+                    {favoriteDog
+                      ?.name ||
+                      "—"}
                   </strong>
 
-                  <small>
-                    Chien le plus utilisé
-                  </small>
+                  <span>
+                    {favoriteDog
+                      ? `${favoriteDog.count} sortie(s)`
+                      : ""}
+                  </span>
                 </div>
 
-                <div className="stat-card">
-                  <span>
-                    📍
-                  </span>
+
+                <div className="stats-highlight">
+                  <small>
+                    Territoire
+                    favori
+                  </small>
 
                   <strong>
-                    {favoriteTerritory?.name || "—"}
+                    {favoriteTerritory
+                      ?.name ||
+                      "—"}
                   </strong>
 
-                  <small>
-                    Territoire le plus fréquenté
-                  </small>
+                  <span>
+                    {favoriteTerritory
+                      ? `${favoriteTerritory.count} sortie(s)`
+                      : ""}
+                  </span>
                 </div>
+
               </div>
 
-              <h3>
-                🦌 Prélèvements par espèce
-              </h3>
 
-              {harvestStats.map((item, index) => (
-                <div
-                  className="stat-card"
-                  key={item.name}
-                >
-                  <strong>
-                    {index + 1}. {item.name}
-                  </strong>
+              <StatsList
+                title="Prélèvements par espèce"
+                items={
+                  speciesStats
+                }
+              />
 
-                  <small>
-                    🎯 {item.count} prélèvement
-                    {item.count > 1 ? "s" : ""}
-                  </small>
-                </div>
-              ))}
+              <StatsList
+                title="Sorties par chien"
+                items={
+                  dogStats
+                }
+              />
 
-              <h3>
-                🐕 Sorties par chien
-              </h3>
+              <StatsList
+                title="Sorties par territoire"
+                items={
+                  territoryStats
+                }
+              />
 
-              {dogStats.map((item, index) => (
-                <div
-                  className="stat-card"
-                  key={item.name}
-                >
-                  <strong>
-                    {index + 1}. {item.name}
-                  </strong>
+              <StatsList
+                title="Types de chasse"
+                items={
+                  huntTypeStats
+                }
+              />
 
-                  <small>
-                    🐕 {item.count} sortie
-                    {item.count > 1 ? "s" : ""}
-                  </small>
-                </div>
-              ))}
-
-              <h3>
-                📍 Sorties par territoire
-              </h3>
-
-              {territoryStats.map((item, index) => (
-                <div
-                  className="stat-card"
-                  key={item.name}
-                >
-                  <strong>
-                    {index + 1}. {item.name}
-                  </strong>
-
-                  <small>
-                    📖 {item.count} sortie
-                    {item.count > 1 ? "s" : ""}
-                  </small>
-                </div>
-              ))}
-
-              <h3>
-                🏹 Types de chasse
-              </h3>
-
-              {huntTypeStats.map((item, index) => (
-                <div
-                  className="stat-card"
-                  key={item.name}
-                >
-                  <strong>
-                    {index + 1}. {item.name}
-                  </strong>
-
-                  <small>
-                    {item.count} sortie
-                    {item.count > 1 ? "s" : ""}
-                  </small>
-                </div>
-              ))}
-            </>
+            </section>
           )}
 
-          {screen === "settings" && (
-            <>
-              <h2>
-                ⚙️ Réglages
-              </h2>
 
-              <div className="stat-card">
-                <strong>
-                  Gestion de Carnet-de-Chasse
-                </strong>
+          {/* =================================================
+              RÉGLAGES
+              ================================================= */}
 
-                <small>
-                  Personnalisez vos chiens et vos espèces.
-                </small>
+          {screen ===
+            "settings" && (
+            <section className="settings-screen">
+
+              <div className="page-heading">
+                <span className="carnet-eyebrow">
+                  PERSONNALISATION
+                </span>
+
+                <h1>
+                  Réglages
+                </h1>
+
+                <p>
+                  Gère tes chiens et
+                  les espèces de ton
+                  carnet.
+                </p>
               </div>
+
 
               {loadingSettings ? (
-                <div className="stat-card">
-                  <strong>
-                    Chargement...
-                  </strong>
-                </div>
+                <p>
+                  Chargement...
+                </p>
               ) : (
                 <>
-                  <h3>
-                    🐕 Mes chiens
-                  </h3>
 
-                  <div className="settings-add-row">
-                    <input
-                      value={newDogName}
-                      placeholder="Nom du nouveau chien"
-                      onChange={(event) =>
-                        setNewDogName(event.target.value)
-                      }
-                    />
+                  {/* CHIENS */}
 
-                    <button
-                      type="button"
-                      className="action-button"
-                      onClick={addDog}
-                    >
-                      ＋ Ajouter
-                    </button>
-                  </div>
+                  <section className="settings-card">
 
-                  {dogs.length === 0 ? (
-                    <div className="stat-card">
-                      <small>
-                        Aucun chien enregistré.
-                      </small>
-                    </div>
-                  ) : (
-                    dogs.map((dog) => (
-                      <div
-                        className="settings-item"
-                        key={dog.id}
-                      >
-                        <span>
-                          🐕 {dog.nom}
-                        </span>
+                    <div className="settings-card-title">
+                      <Dog
+                        size={22}
+                      />
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            deleteDog(dog)
-                          }
-                        >
-                          🗑️
-                        </button>
+                      <div>
+                        <strong>
+                          Mes chiens
+                        </strong>
+
+                        <small>
+                          {
+                            dogs.length
+                          }{" "}
+                          chien(s)
+                        </small>
                       </div>
-                    ))
-                  )}
-
-                  <h3>
-                    🦌 Mes espèces
-                  </h3>
-
-                  <div className="settings-add-row">
-                    <input
-                      value={newSpeciesName}
-                      placeholder="Nom de la nouvelle espèce"
-                      onChange={(event) =>
-                        setNewSpeciesName(event.target.value)
-                      }
-                    />
-
-                    <button
-                      type="button"
-                      className="action-button"
-                      onClick={addSpecies}
-                    >
-                      ＋ Ajouter
-                    </button>
-                  </div>
-
-                  {speciesList.length === 0 ? (
-                    <div className="stat-card">
-                      <small>
-                        Aucune espèce enregistrée.
-                      </small>
                     </div>
-                  ) : (
-                    speciesList.map((item) => (
-                      <div
-                        className="settings-item"
-                        key={item.id}
-                      >
-                        <span>
-                          🦌 {item.nom}
-                        </span>
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            deleteSpecies(item)
+
+                    <div className="settings-add-row">
+
+                      <input
+                        type="text"
+                        placeholder="Nom du chien"
+                        value={
+                          newDogName
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setNewDogName(
+                            event
+                              .target
+                              .value
+                          )
+                        }
+                        onKeyDown={(
+                          event
+                        ) => {
+                          if (
+                            event.key ===
+                            "Enter"
+                          ) {
+                            addDog();
                           }
-                        >
-                          🗑️
-                        </button>
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={
+                          addDog
+                        }
+                      >
+                        <Plus
+                          size={
+                            19
+                          }
+                        />
+                      </button>
+
+                    </div>
+
+
+                    <div className="settings-list">
+
+                      {dogs.map(
+                        (dog) => (
+                          <div
+                            className="settings-row"
+                            key={
+                              dog.id
+                            }
+                          >
+                            <span>
+                              {
+                                dog.nom
+                              }
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                deleteDog(
+                                  dog
+                                )
+                              }
+                            >
+                              <Trash2
+                                size={
+                                  17
+                                }
+                              />
+                            </button>
+                          </div>
+                        )
+                      )}
+
+                    </div>
+
+                  </section>
+
+
+                  {/* ESPÈCES */}
+
+                  <section className="settings-card">
+
+                    <div className="settings-card-title">
+                      <Target
+                        size={22}
+                      />
+
+                      <div>
+                        <strong>
+                          Espèces
+                        </strong>
+
+                        <small>
+                          {
+                            speciesList.length
+                          }{" "}
+                          espèce(s)
+                        </small>
                       </div>
-                    ))
-                  )}
+                    </div>
+
+
+                    <div className="settings-add-row">
+
+                      <input
+                        type="text"
+                        placeholder="Nouvelle espèce"
+                        value={
+                          newSpeciesName
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setNewSpeciesName(
+                            event
+                              .target
+                              .value
+                          )
+                        }
+                        onKeyDown={(
+                          event
+                        ) => {
+                          if (
+                            event.key ===
+                            "Enter"
+                          ) {
+                            addSpecies();
+                          }
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={
+                          addSpecies
+                        }
+                      >
+                        <Plus
+                          size={
+                            19
+                          }
+                        />
+                      </button>
+
+                    </div>
+
+
+                    <div className="settings-list">
+
+                      {speciesList.map(
+                        (
+                          item
+                        ) => (
+                          <div
+                            className="settings-row"
+                            key={
+                              item.id
+                            }
+                          >
+                            <span>
+                              {
+                                item.nom
+                              }
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                deleteSpecies(
+                                  item
+                                )
+                              }
+                            >
+                              <Trash2
+                                size={
+                                  17
+                                }
+                              />
+                            </button>
+                          </div>
+                        )
+                      )}
+
+                    </div>
+
+                  </section>
+
                 </>
               )}
-            </>
+
+            </section>
           )}
+
         </section>
 
-        <nav className="bottom-nav">
+
+        {/* =================================================
+            NAVIGATION BAS
+            ================================================= */}
+
+        <nav className="bottom-nav new-bottom-nav">
+
           <button
+            className={
+              screen === "home"
+                ? "active"
+                : ""
+            }
             onClick={() =>
               setScreen("home")
             }
           >
-            🏠
+            <Home
+              size={25}
+            />
+
             <span>
               Accueil
             </span>
           </button>
 
+
           <button
+            className={
+              screen ===
+              "carnet"
+                ? "active"
+                : ""
+            }
             onClick={() =>
-              setScreen("carnet")
+              setScreen(
+                "carnet"
+              )
             }
           >
-            📖
+            <BookOpen
+              size={25}
+            />
+
             <span>
               Carnet
             </span>
           </button>
 
+
           <button
             className="add-button"
             onClick={newTrip}
+            aria-label="Nouvelle sortie"
           >
-            ＋
+            <Plus
+              size={35}
+              strokeWidth={
+                1.8
+              }
+            />
           </button>
 
+
           <button
+            className={
+              screen === "map"
+                ? "active"
+                : ""
+            }
             onClick={() =>
               setScreen("map")
             }
           >
-            🗺️
+            <MapIcon
+              size={25}
+            />
+
             <span>
               Carte
             </span>
           </button>
 
+
           <button
+            className={
+              screen ===
+              "stats"
+                ? "active"
+                : ""
+            }
             onClick={() =>
-              setScreen("stats")
+              setScreen(
+                "stats"
+              )
             }
           >
-            📊
+            <BarChart3
+              size={25}
+            />
+
             <span>
               Stats
             </span>
           </button>
+
         </nav>
-      </section>
 
-      {showForm && (
-        <div className="modal">
-          <section className="form-card">
-            <h2>
-              {editingTripId
-                ? "Modifier la sortie"
-                : "Nouvelle sortie"}
-            </h2>
 
-            <label>
-              Date
+        {/* =================================================
+            FORMULAIRE SORTIE
+            ================================================= */}
 
-              <input
-                type="date"
-                value={form.date}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    date: event.target.value,
-                  })
-                }
-              />
-            </label>
+        {showForm && (
+          <div className="modal-overlay">
 
-            <label>
-              Territoire
+            <section className="modal">
 
-              <input
-                value={form.territory}
-                placeholder="Ex. Bois de la Vallée"
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    territory: event.target.value,
-                  })
-                }
-              />
-            </label>
+              <div className="modal-header">
 
-            <h3>
-              📍 Localisation
-            </h3>
-
-            <div className="form-actions">
-              <button
-                type="button"
-                onClick={useMyPosition}
-                disabled={locating}
-              >
-                {locating
-                  ? "📍 Recherche..."
-                  : "📍 Utiliser ma position"}
-              </button>
-
-              {form.latitude != null &&
-                form.longitude != null && (
-                  <button
-                    type="button"
-                    onClick={removePosition}
-                  >
-                    ✕ Supprimer GPS
-                  </button>
-                )}
-            </div>
-
-            {form.latitude != null &&
-              form.longitude != null && (
-                <div className="stat-card">
-                  <strong>
-                    Position enregistrée
-                  </strong>
-
+                <div>
                   <small>
-                    Latitude :{" "}
-                    {form.latitude.toFixed(6)}
+                    CARNET DE CHASSE
                   </small>
 
-                  <small>
-                    Longitude :{" "}
-                    {form.longitude.toFixed(6)}
-                  </small>
+                  <h2>
+                    {editingTripId
+                      ? "Modifier la sortie"
+                      : "Nouvelle sortie"}
+                  </h2>
                 </div>
-              )}
 
-            <label>
-              Type de chasse
-
-              <select
-                value={form.huntType}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    huntType: event.target.value,
-                  })
-                }
-              >
-                <option>
-                  Petit gibier
-                </option>
-
-                <option>
-                  Grand gibier
-                </option>
-
-                <option>
-                  Battue
-                </option>
-
-                <option>
-                  Approche
-                </option>
-
-                <option>
-                  Affût
-                </option>
-              </select>
-            </label>
-
-            <h3>
-              🎯 Prélèvements
-            </h3>
-
-            {speciesList.length === 0 ? (
-              <div className="stat-card">
-                <small>
-                  Aucune espèce disponible. Ajoutez-en une dans ⚙️ Réglages.
-                </small>
-              </div>
-            ) : (
-              <div className="harvest-form">
-                <select
-                  value={species}
-                  onChange={(event) =>
-                    setSpecies(event.target.value)
+                <button
+                  type="button"
+                  className="modal-close"
+                  onClick={
+                    closeForm
                   }
                 >
-                  {speciesList.map((item) => (
-                    <option
-                      key={item.id}
-                      value={item.nom}
-                    >
-                      {item.nom}
-                    </option>
-                  ))}
-                </select>
+                  <X
+                    size={22}
+                  />
+                </button>
+
+              </div>
+
+
+              <div className="form-group">
+                <label>
+                  Date
+                </label>
 
                 <input
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={(event) =>
-                    setQuantity(
-                      Math.max(
-                        1,
-                        Number(event.target.value)
-                      )
-                    )
+                  type="date"
+                  value={
+                    form.date
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setForm({
+                      ...form,
+
+                      date:
+                        event
+                          .target
+                          .value,
+                    })
                   }
                 />
-
-                <button
-                  type="button"
-                  onClick={addHarvest}
-                >
-                  Ajouter
-                </button>
               </div>
-            )}
 
-            {form.harvests.map((item) => (
-              <div
-                className="form-actions"
-                key={item.species}
-              >
-                <p>
-                  🎯 {item.species} × {item.quantity}
-                </p>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    removeHarvest(item.species)
+              <div className="form-group">
+                <label>
+                  Territoire
+                </label>
+
+                <input
+                  type="text"
+                  placeholder="Ex. Bois de Vernoil"
+                  value={
+                    form.territory
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setForm({
+                      ...form,
+
+                      territory:
+                        event
+                          .target
+                          .value,
+                    })
+                  }
+                />
+              </div>
+
+
+              <div className="form-group">
+                <label>
+                  Type de chasse
+                </label>
+
+                <select
+                  value={
+                    form.huntType
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setForm({
+                      ...form,
+
+                      huntType:
+                        event
+                          .target
+                          .value,
+                    })
                   }
                 >
-                  ✕
-                </button>
-              </div>
-            ))}
+                  <option>
+                    Battue
+                  </option>
 
-            <h3>
-              🐕 Chiens
-            </h3>
+                  <option>
+                    Approche
+                  </option>
 
-            {dogs.length === 0 ? (
-              <div className="stat-card">
-                <small>
-                  Aucun chien disponible. Ajoutez-en un dans ⚙️ Réglages.
-                </small>
+                  <option>
+                    Affût
+                  </option>
+
+                  <option>
+                    Devant soi
+                  </option>
+
+                  <option>
+                    Petit gibier
+                  </option>
+
+                  <option>
+                    Autre
+                  </option>
+                </select>
               </div>
-            ) : (
-              <div className="dog-list">
-                {dogs.map((dog) => (
+
+
+              {/* GPS */}
+
+              <div className="form-group">
+                <label>
+                  Position GPS
+                </label>
+
+                {form.latitude !=
+                  null &&
+                form.longitude !=
+                  null ? (
+                  <div className="gps-saved">
+
+                    <div>
+                      <MapPin
+                        size={
+                          20
+                        }
+                      />
+
+                      <span>
+                        Position
+                        enregistrée
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={
+                        removePosition
+                      }
+                    >
+                      Retirer
+                    </button>
+
+                  </div>
+                ) : (
                   <button
                     type="button"
-                    key={dog.id}
-                    onClick={() =>
-                      toggleDog(dog.nom)
+                    className="gps-button"
+                    onClick={
+                      useMyPosition
                     }
-                    className={
-                      form.dogs.includes(dog.nom)
-                        ? "dog-selected"
-                        : ""
+                    disabled={
+                      locating
                     }
                   >
-                    🐕 {dog.nom}
+                    <MapPin
+                      size={19}
+                    />
+
+                    {locating
+                      ? "Localisation..."
+                      : "Utiliser ma position"}
                   </button>
-                ))}
+                )}
+
               </div>
-            )}
 
-            <h3>
-              Observations
-            </h3>
 
-            <textarea
-              rows={4}
-              value={form.notes}
-              placeholder="Météo, observations..."
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  notes: event.target.value,
-                })
-              }
-            />
+              {/* PRÉLÈVEMENTS */}
 
-            <div className="form-actions">
-              <button
-                type="button"
-                onClick={closeForm}
-              >
-                Annuler
-              </button>
+              <div className="form-group">
+                <label>
+                  Prélèvements
+                </label>
 
-              <button
-                type="button"
-                className="save-button"
-                onClick={saveTrip}
-              >
-                💾{" "}
-                {editingTripId
-                  ? "Enregistrer les modifications"
-                  : "Enregistrer"}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+                <div className="harvest-form">
+
+                  <select
+                    value={
+                      species
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setSpecies(
+                        event
+                          .target
+                          .value
+                      )
+                    }
+                  >
+                    <option value="">
+                      Choisir une
+                      espèce
+                    </option>
+
+                    {speciesList.map(
+                      (
+                        item
+                      ) => (
+                        <option
+                          key={
+                            item.id
+                          }
+                          value={
+                            item.nom
+                          }
+                        >
+                          {
+                            item.nom
+                          }
+                        </option>
+                      )
+                    )}
+                  </select>
+
+
+                  <input
+                    type="number"
+                    min="1"
+                    value={
+                      quantity
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setQuantity(
+                        Number(
+                          event
+                            .target
+                            .value
+                        )
+                      )
+                    }
+                  />
+
+
+                  <button
+                    type="button"
+                    onClick={
+                      addHarvest
+                    }
+                  >
+                    <Plus
+                      size={19}
+                    />
+                  </button>
+
+                </div>
+
+
+                {form.harvests
+                  .length > 0 && (
+                  <div className="harvest-list">
+
+                    {form.harvests.map(
+                      (
+                        harvest
+                      ) => (
+                        <div
+                          className="harvest-item"
+                          key={
+                            harvest.species
+                          }
+                        >
+                          <span>
+                            {
+                              harvest.species
+                            }
+
+                            <strong>
+                              {" "}
+                              ×
+                              {
+                                harvest.quantity
+                              }
+                            </strong>
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              removeHarvest(
+                                harvest.species
+                              )
+                            }
+                          >
+                            <X
+                              size={
+                                17
+                              }
+                            />
+                          </button>
+                        </div>
+                      )
+                    )}
+
+                  </div>
+                )}
+
+              </div>
+
+
+              {/* CHIENS */}
+
+              <div className="form-group">
+                <label>
+                  Chiens
+                </label>
+
+                <div className="dog-grid">
+
+                  {dogs.map(
+                    (dog) => {
+                      const selected =
+                        form.dogs.includes(
+                          dog.nom
+                        );
+
+                      return (
+                        <button
+                          key={
+                            dog.id
+                          }
+                          type="button"
+                          className={
+                            selected
+                              ? "dog-chip selected"
+                              : "dog-chip"
+                          }
+                          onClick={() =>
+                            toggleDog(
+                              dog.nom
+                            )
+                          }
+                        >
+                          <Dog
+                            size={
+                              16
+                            }
+                          />
+
+                          {
+                            dog.nom
+                          }
+                        </button>
+                      );
+                    }
+                  )}
+
+                </div>
+              </div>
+
+
+              {/* NOTES */}
+
+              <div className="form-group">
+                <label>
+                  Notes /
+                  observations
+                </label>
+
+                <textarea
+                  rows={4}
+                  placeholder="Déroulement de la journée, météo, observations..."
+                  value={
+                    form.notes
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setForm({
+                      ...form,
+
+                      notes:
+                        event
+                          .target
+                          .value,
+                    })
+                  }
+                />
+              </div>
+
+
+              {/* ACTIONS */}
+
+              <div className="modal-actions">
+
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={
+                    closeForm
+                  }
+                >
+                  Annuler
+                </button>
+
+
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={
+                    saveTrip
+                  }
+                >
+                  {editingTripId
+                    ? "Enregistrer les modifications"
+                    : "Enregistrer la sortie"}
+                </button>
+
+              </div>
+
+            </section>
+          </div>
+        )}
+
+      </section>
     </main>
   );
 }
 
-export default App;
+
+/* =========================================================
+   PETIT COMPOSANT STATISTIQUES
+   ========================================================= */
+
+function StatsList({
+  title,
+  items,
+}: {
+  title: string;
+
+  items: {
+    name: string;
+    count: number;
+  }[];
+}) {
+  return (
+    <section className="stats-list-card">
+      <h2>
+        {title}
+      </h2>
+
+      {items.length === 0 ? (
+        <p>
+          Aucune donnée pour
+          le moment.
+        </p>
+      ) : (
+        <div className="stats-list">
+          {items.map(
+            (
+              item,
+              index
+            ) => (
+              <div
+                key={
+                  item.name
+                }
+                className="stats-list-row"
+              >
+                <span>
+                  <b>
+                    {index +
+                      1}.
+                  </b>{" "}
+                  {
+                    item.name
+                  }
+                </span>
+
+                <strong>
+                  {
+                    item.count
+                  }
+                </strong>
+              </div>
+            )
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
