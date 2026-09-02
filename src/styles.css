@@ -541,3 +541,95 @@ h3 {
     border-radius: 28px;
   }
 }
+
+.leaflet-container {
+  font-family: inherit;
+}
+
+.leaflet-popup-content {
+  min-width: 180px;
+}
+
+.leaflet-popup-content p {
+  margin: 6px 0;
+}
+
+.leaflet-popup-content button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.screen-content {
+  padding-bottom: 100px;
+}
+
+.map-wrapper {
+  width: 100%;
+  height: 420px;
+  margin-top: 15px;
+  margin-bottom: 20px;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+.settings-add-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.settings-add-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-add-row .action-button {
+  width: auto;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border-radius: 14px;
+  background: white;
+}
+
+.settings-item span {
+  font-weight: 600;
+}
+
+.settings-item button {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.profile-button {
+  border: none;
+  cursor: pointer;
+}
+
+.logo img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 24px;
+  display: block;
+  margin: 0 auto;
+}
