@@ -2390,3 +2390,424 @@ button {
     padding: 0;
   }
 }
+
+/* ======================================================
+   CORRECTION MODAL NOUVELLE / MODIFIER SORTIE - MOBILE
+   ====================================================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  padding: 0;
+
+  background: rgba(18, 35, 26, 0.48);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  overflow: hidden;
+}
+
+.modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 600px;
+  max-height: 92dvh;
+
+  margin: 0;
+  padding:
+    22px
+    18px
+    calc(28px + env(safe-area-inset-bottom));
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  border-radius: 28px 28px 0 0;
+
+  background: #fffdf7;
+
+  box-shadow:
+    0 -12px 40px
+    rgba(20, 40, 28, 0.22);
+
+  -webkit-overflow-scrolling: touch;
+}
+
+
+/* HEADER */
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  width: 100%;
+
+  gap: 15px;
+
+  margin-bottom: 22px;
+}
+
+.modal-header > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.modal-header small {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #806b46;
+
+  font-size: 0.67rem;
+  font-weight: 700;
+
+  letter-spacing: 1px;
+}
+
+.modal-header h2 {
+  margin: 0;
+
+  color: #173c2a;
+
+  font-family: Georgia, serif;
+  font-size: 1.55rem;
+}
+
+.modal-close {
+  width: 42px;
+  height: 42px;
+
+  flex: 0 0 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 1px solid #deddd4;
+  border-radius: 50%;
+
+  background: #f5f2e8;
+  color: #234a35;
+}
+
+
+/* GROUPES DU FORMULAIRE */
+
+.modal .form-group {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+
+  gap: 8px;
+
+  margin: 0 0 19px;
+}
+
+.modal .form-group > label {
+  display: block;
+
+  width: 100%;
+
+  margin: 0;
+
+  color: #33483c;
+
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+
+/* INPUTS */
+
+.modal input,
+.modal select,
+.modal textarea {
+  display: block;
+
+  box-sizing: border-box;
+
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+
+  margin: 0;
+
+  border: 1px solid #d9ddd5;
+  border-radius: 14px;
+
+  background: #fff;
+  color: #26372d;
+
+  font: inherit;
+}
+
+.modal input,
+.modal select {
+  min-height: 50px;
+
+  padding: 0 13px;
+}
+
+.modal textarea {
+  min-height: 110px;
+
+  padding: 13px;
+
+  resize: vertical;
+}
+
+
+/* GPS */
+
+.modal .gps-button {
+  width: 100% !important;
+  min-height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  padding: 10px 14px;
+
+  border: 1px solid #cfd8cf;
+  border-radius: 14px;
+
+  background: #e9eee5;
+  color: #214b34;
+
+  font-weight: 700;
+}
+
+.modal .gps-saved {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 12px;
+
+  border-radius: 14px;
+
+  background: #e9eee5;
+}
+
+.modal .gps-saved > div {
+  display: flex;
+  align-items: center;
+
+  min-width: 0;
+
+  gap: 8px;
+}
+
+
+/* PRÉLÈVEMENTS */
+
+.modal .harvest-form {
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    70px
+    50px !important;
+
+  width: 100% !important;
+
+  gap: 8px;
+}
+
+.modal .harvest-form select,
+.modal .harvest-form input {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.modal .harvest-form button {
+  width: 50px;
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 14px;
+
+  background: #24583d;
+  color: white;
+}
+
+.modal .harvest-list {
+  display: flex;
+  flex-direction: column;
+
+  width: 100%;
+
+  gap: 7px;
+
+  margin-top: 9px;
+}
+
+.modal .harvest-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+
+  padding: 10px 12px;
+
+  border-radius: 12px;
+
+  background: #f1eee4;
+}
+
+.modal .harvest-item button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  background: transparent;
+
+  color: #98564c;
+}
+
+
+/* CHIENS */
+
+.modal .dog-grid {
+  display: flex !important;
+  flex-wrap: wrap !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  gap: 7px !important;
+
+  overflow: visible !important;
+}
+
+.modal .dog-chip {
+  width: auto !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+
+  padding: 9px 12px !important;
+
+  border: 1px solid #d8ddd5;
+  border-radius: 50px;
+
+  background: #f7f6f0;
+  color: #45564c;
+
+  font-size: 0.78rem;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.modal .dog-chip.selected {
+  border-color: #24583d;
+
+  background: #24583d;
+  color: white;
+}
+
+
+/* BOUTONS BAS */
+
+.modal .modal-actions {
+  display: grid !important;
+
+  grid-template-columns: 1fr 1fr;
+
+  width: 100%;
+
+  gap: 10px;
+
+  margin-top: 25px;
+}
+
+.modal .modal-actions button {
+  width: 100% !important;
+  min-width: 0;
+
+  min-height: 50px;
+
+  padding: 10px;
+
+  border-radius: 15px;
+
+  font-weight: 700;
+}
+
+.modal .secondary-button {
+  border: 1px solid #d8ddd5;
+
+  background: #f5f2e8;
+  color: #405047;
+}
+
+.modal .primary-button {
+  border: 0;
+
+  background: #1e5138;
+  color: white;
+}
+
+
+/* IPHONE */
+
+@media (max-width: 500px) {
+  .modal {
+    max-height: 94dvh;
+
+    padding:
+      20px
+      16px
+      calc(25px + env(safe-area-inset-bottom));
+  }
+
+  .modal .harvest-form {
+    grid-template-columns:
+      minmax(0, 1fr)
+      65px
+      48px !important;
+  }
+
+  .modal .modal-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-header h2 {
+    font-size: 1.4rem;
+  }
+}
