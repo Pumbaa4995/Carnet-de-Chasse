@@ -2811,3 +2811,371 @@ button {
     font-size: 1.4rem;
   }
 }
+
+/* ======================================================
+   CORRECTION DÉFINITIVE MODAL
+   ancien .modal = overlay
+   nouveau .modal = formulaire
+   ====================================================== */
+
+.modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+
+  width: 100% !important;
+  height: 100dvh !important;
+
+  padding: 0 !important;
+
+  background: rgba(15, 30, 21, 0.48) !important;
+
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+
+  overflow: hidden !important;
+}
+
+
+/* IMPORTANT :
+   on annule l'ancienne définition de .modal */
+
+.modal-overlay > .modal {
+  position: relative !important;
+
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+
+  z-index: auto !important;
+
+  display: block !important;
+
+  align-items: initial !important;
+  justify-content: initial !important;
+
+  width: 100% !important;
+  max-width: 600px !important;
+
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: 92dvh !important;
+
+  margin: 0 !important;
+
+  padding:
+    22px
+    18px
+    calc(25px + env(safe-area-inset-bottom))
+    !important;
+
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+
+  border: 0 !important;
+  border-radius:
+    28px 28px 0 0 !important;
+
+  background: #fffdf7 !important;
+
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+
+  box-shadow:
+    0 -15px 40px
+    rgba(0, 0, 0, 0.18)
+    !important;
+
+  transform: none !important;
+
+  -webkit-overflow-scrolling: touch;
+}
+
+
+/* chaque rubrique obligatoirement verticale */
+
+.modal-overlay
+  > .modal
+  .form-group {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+
+  margin: 0 0 19px !important;
+  padding: 0 !important;
+
+  gap: 8px !important;
+}
+
+
+.modal-overlay
+  > .modal
+  .form-group
+  > label {
+  display: block !important;
+
+  position: static !important;
+
+  width: 100% !important;
+
+  margin: 0 !important;
+
+  color: #294535;
+
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+
+/* champs */
+
+.modal-overlay
+  > .modal
+  input,
+
+.modal-overlay
+  > .modal
+  select,
+
+.modal-overlay
+  > .modal
+  textarea {
+  position: static !important;
+
+  display: block !important;
+
+  box-sizing: border-box !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+
+  margin: 0 !important;
+
+  float: none !important;
+
+  transform: none !important;
+}
+
+
+.modal-overlay
+  > .modal
+  input,
+
+.modal-overlay
+  > .modal
+  select {
+  min-height: 50px !important;
+}
+
+
+/* HEADER */
+
+.modal-overlay
+  > .modal
+  .modal-header {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+
+  width: 100% !important;
+
+  margin-bottom: 22px !important;
+}
+
+
+.modal-overlay
+  > .modal
+  .modal-header
+  > div {
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+
+/* PRÉLÈVEMENTS */
+
+.modal-overlay
+  > .modal
+  .harvest-form {
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    65px
+    50px
+    !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  gap: 8px !important;
+
+  margin: 0 !important;
+}
+
+
+.modal-overlay
+  > .modal
+  .harvest-form
+  select,
+
+.modal-overlay
+  > .modal
+  .harvest-form
+  input {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+
+.modal-overlay
+  > .modal
+  .harvest-form
+  button {
+  width: 50px !important;
+  min-width: 50px !important;
+  height: 50px !important;
+
+  padding: 0 !important;
+}
+
+
+/* CHIENS */
+
+.modal-overlay
+  > .modal
+  .dog-grid {
+  position: static !important;
+
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+
+  gap: 8px !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  overflow: visible !important;
+
+  transform: none !important;
+}
+
+
+.modal-overlay
+  > .modal
+  .dog-chip {
+  position: static !important;
+
+  display: inline-flex !important;
+
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+
+  flex: 0 0 auto !important;
+
+  margin: 0 !important;
+
+  padding:
+    9px 12px !important;
+
+  transform: none !important;
+
+  white-space: nowrap !important;
+}
+
+
+/* GPS */
+
+.modal-overlay
+  > .modal
+  .gps-button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+
+  min-height: 50px !important;
+}
+
+
+/* ACTIONS BAS */
+
+.modal-overlay
+  > .modal
+  .modal-actions {
+  display: grid !important;
+
+  grid-template-columns:
+    1fr 1fr !important;
+
+  width: 100% !important;
+
+  gap: 10px !important;
+
+  margin-top: 24px !important;
+}
+
+
+.modal-overlay
+  > .modal
+  .modal-actions
+  button {
+  width: 100% !important;
+  min-width: 0 !important;
+
+  min-height: 50px !important;
+}
+
+
+/* IPHONE */
+
+@media (max-width: 500px) {
+
+  .modal-overlay
+    > .modal {
+    width: 100% !important;
+    max-width: none !important;
+
+    max-height: 94dvh !important;
+
+    padding:
+      20px
+      16px
+      calc(
+        22px +
+        env(safe-area-inset-bottom)
+      )
+      !important;
+  }
+
+  .modal-overlay
+    > .modal
+    .modal-actions {
+    grid-template-columns:
+      1fr !important;
+  }
+}
