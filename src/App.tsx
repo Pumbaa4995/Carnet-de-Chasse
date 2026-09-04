@@ -94,17 +94,30 @@ type TripForm = {
    LEAFLET
    ========================================================= */
 
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-
-  iconUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+const huntingTripIcon = L.divIcon({
+  className: "hunting-map-custom-marker",
+  html: `
+    <div class="hunting-map-custom-marker-pin">
+      <svg
+        viewBox="0 0 24 24"
+        width="21"
+        height="21"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 22v-7" />
+        <path d="m7 11 5-8 5 8" />
+        <path d="m5 15 7-10 7 10" />
+      </svg>
+    </div>
+  `,
+  iconSize: [46, 50],
+  iconAnchor: [23, 47],
+  popupAnchor: [0, -44],
 });
 
 
@@ -838,30 +851,27 @@ export default function App() {
 
 
   /* =========================================================
-     CHIENS
+     SÉLECTION DES CHIENS DANS UNE SORTIE
      ========================================================= */
 
   function toggleDog(
     dogName: string
   ) {
-    const selected =
-      form.dogs.includes(
+    setForm((current) => ({
+      ...current,
+
+      dogs: current.dogs.includes(
         dogName
-      );
-
-    setForm({
-      ...form,
-
-      dogs: selected
-        ? form.dogs.filter(
+      )
+        ? current.dogs.filter(
             (dog) =>
               dog !== dogName
           )
         : [
-            ...form.dogs,
+            ...current.dogs,
             dogName,
           ],
-    });
+    }));
   }
 
 
@@ -2639,6 +2649,7 @@ export default function App() {
 
                 <Marker
                   key={trip.id}
+                  icon={huntingTripIcon}
                   position={[
                     trip.latitude as number,
                     trip.longitude as number,
@@ -3444,21 +3455,30 @@ export default function App() {
             "settings" && (
             <section className="settings-screen">
 
-              <div className="page-heading">
-                <span className="carnet-eyebrow">
-                  PERSONNALISATION
-                </span>
+              <div className="hunting-settings-heading">
 
-                <h1>
-                  Réglages
-                </h1>
+  <div>
+    <span className="carnet-eyebrow">
+      PERSONNALISATION
+    </span>
 
-                <p>
-                  Gère tes chiens et
-                  les espèces de ton
-                  carnet.
-                </p>
-              </div>
+    <h1>
+      Réglages
+    </h1>
+
+    <p>
+      Personnalise ton carnet de chasse.
+    </p>
+  </div>
+
+  <div className="hunting-settings-heading-icon">
+    <SlidersHorizontal
+      size={28}
+      strokeWidth={1.7}
+    />
+  </div>
+
+</div>
 
 
               {loadingSettings ? (
@@ -3470,51 +3490,48 @@ export default function App() {
 
                   {/* CHIENS */}
 
-                  <section className="settings-card">
+                  <section className="hunting-settings-card">
 
-                    <div className="settings-card-title">
-                      <Dog
-                        size={22}
-                      />
+                    <div className="hunting-settings-card-header">
+
+                      <div className="hunting-settings-card-icon">
+                        <Dog size={24} />
+                      </div>
 
                       <div>
+                        <span>
+                          MA MEUTE
+                        </span>
+
                         <strong>
                           Mes chiens
                         </strong>
 
                         <small>
-                          {
-                            dogs.length
-                          }{" "}
-                          chien(s)
+                          {dogs.length}{" "}
+                          {dogs.length > 1
+                            ? "chiens enregistrés"
+                            : "chien enregistré"}
                         </small>
                       </div>
+
                     </div>
 
 
-                    <div className="settings-add-row">
+                    <div className="hunting-settings-add">
 
                       <input
                         type="text"
-                        placeholder="Nom du chien"
-                        value={
-                          newDogName
-                        }
-                        onChange={(
-                          event
-                        ) =>
+                        placeholder="Nom du nouveau chien"
+                        value={newDogName}
+                        onChange={(event) =>
                           setNewDogName(
-                            event
-                              .target
-                              .value
+                            event.target.value
                           )
                         }
-                        onKeyDown={(
-                          event
-                        ) => {
+                        onKeyDown={(event) => {
                           if (
-                            event.key ===
-                            "Enter"
+                            event.key === "Enter"
                           ) {
                             addDog();
                           }
@@ -3523,52 +3540,65 @@ export default function App() {
 
                       <button
                         type="button"
-                        onClick={
-                          addDog
-                        }
+                        onClick={addDog}
+                        aria-label="Ajouter le chien"
                       >
-                        <Plus
-                          size={
-                            19
-                          }
-                        />
+                        <Plus size={21} />
                       </button>
 
                     </div>
 
 
-                    <div className="settings-list">
+                    <div className="hunting-settings-list">
 
-                      {dogs.map(
-                        (dog) => (
+                      {dogs.length === 0 ? (
+
+                        <div className="hunting-settings-empty">
+                          <Dog size={28} />
+
+                          <span>
+                            Aucun chien enregistré.
+                          </span>
+                        </div>
+
+                      ) : (
+
+                        dogs.map((dog) => (
+
                           <div
-                            className="settings-row"
-                            key={
-                              dog.id
-                            }
+                            className="hunting-settings-row"
+                            key={dog.id}
                           >
-                            <span>
-                              {
-                                dog.nom
-                              }
-                            </span>
+
+                            <div className="hunting-settings-row-icon">
+                              <Dog size={18} />
+                            </div>
+
+                            <div className="hunting-settings-row-name">
+                              <strong>
+                                {dog.nom}
+                              </strong>
+
+                              <small>
+                                Chien de chasse
+                              </small>
+                            </div>
 
                             <button
                               type="button"
+                              className="hunting-settings-delete"
                               onClick={() =>
-                                deleteDog(
-                                  dog
-                                )
+                                deleteDog(dog)
                               }
+                              aria-label={`Supprimer ${dog.nom}`}
                             >
-                              <Trash2
-                                size={
-                                  17
-                                }
-                              />
+                              <Trash2 size={18} />
                             </button>
+
                           </div>
-                        )
+
+                        ))
+
                       )}
 
                     </div>
@@ -3578,52 +3608,47 @@ export default function App() {
 
                   {/* ESPÈCES */}
 
-                  <section className="settings-card">
+                  <section className="hunting-settings-card">
 
-                    <div className="settings-card-title">
-                      <Target
-                        size={22}
-                      />
+                    <div className="hunting-settings-card-header">
+
+                      <div className="hunting-settings-card-icon">
+                        <Target size={24} />
+                      </div>
 
                       <div>
+                        <span>
+                          GIBIER
+                        </span>
+
                         <strong>
-                          Espèces
+                          Mes espèces
                         </strong>
 
                         <small>
-                          {
-                            speciesList.length
-                          }{" "}
-                          espèce(s)
+                          {speciesList.length}{" "}
+                          {speciesList.length > 1
+                            ? "espèces enregistrées"
+                            : "espèce enregistrée"}
                         </small>
                       </div>
+
                     </div>
 
 
-                    <div className="settings-add-row">
+                    <div className="hunting-settings-add">
 
                       <input
                         type="text"
-                        placeholder="Nouvelle espèce"
-                        value={
-                          newSpeciesName
-                        }
-                        onChange={(
-                          event
-                        ) =>
+                        placeholder="Nom de la nouvelle espèce"
+                        value={newSpeciesName}
+                        onChange={(event) =>
                           setNewSpeciesName(
-                            event
-                              .target
-                              .value
+                            event.target.value
                           )
                         }
-                        onKeyDown={(
-                          event
-                        ) => {
-                          if (
-                            event.key ===
-                            "Enter"
-                          ) {
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
                             addSpecies();
                           }
                         }}
@@ -3631,54 +3656,65 @@ export default function App() {
 
                       <button
                         type="button"
-                        onClick={
-                          addSpecies
-                        }
+                        onClick={addSpecies}
+                        aria-label="Ajouter l'espèce"
                       >
-                        <Plus
-                          size={
-                            19
-                          }
-                        />
+                        <Plus size={21} />
                       </button>
 
                     </div>
 
 
-                    <div className="settings-list">
+                    <div className="hunting-settings-list">
 
-                      {speciesList.map(
-                        (
-                          item
-                        ) => (
+                      {speciesList.length === 0 ? (
+
+                        <div className="hunting-settings-empty">
+                          <Target size={28} />
+
+                          <span>
+                            Aucune espèce enregistrée.
+                          </span>
+                        </div>
+
+                      ) : (
+
+                        speciesList.map((item) => (
+
                           <div
-                            className="settings-row"
-                            key={
-                              item.id
-                            }
+                            className="hunting-settings-row"
+                            key={item.id}
                           >
-                            <span>
-                              {
-                                item.nom
-                              }
-                            </span>
+
+                            <div className="hunting-settings-row-icon">
+                              <Target size={18} />
+                            </div>
+
+                            <div className="hunting-settings-row-name">
+                              <strong>
+                                {item.nom}
+                              </strong>
+
+                              <small>
+                                Espèce de gibier
+                              </small>
+                            </div>
 
                             <button
                               type="button"
+                              className="hunting-settings-delete"
                               onClick={() =>
-                                deleteSpecies(
-                                  item
-                                )
+                                deleteSpecies(item)
                               }
+                              aria-label={`Supprimer ${item.nom}`}
                             >
-                              <Trash2
-                                size={
-                                  17
-                                }
-                              />
+                              <Trash2 size={18} />
                             </button>
+
                           </div>
-                        )
+
+                        ))
+
                       )}
 
                     </div>
