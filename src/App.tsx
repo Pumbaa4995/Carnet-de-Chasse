@@ -23,6 +23,8 @@ import {
   Target,
   Trash2,
   TreePine,
+  UserRound,
+  LogOut,
   X,
 } from "lucide-react";
 
@@ -70,6 +72,15 @@ type NamedItem = {
   id: string;
   nom: string;
 };
+
+type UserProfile = {
+  id: string;
+  prenom: string;
+};
+
+type AuthMode =
+  | "login"
+  | "register";
 
 type Screen =
   | "home"
@@ -177,6 +188,33 @@ function MapAutoFit({
    ========================================================= */
 
 export default function App() {
+  const [authLoading, setAuthLoading] =
+    useState(true);
+
+  const [currentUserId, setCurrentUserId] =
+    useState<string | null>(null);
+
+  const [currentProfile, setCurrentProfile] =
+    useState<UserProfile | null>(null);
+
+  const [authMode, setAuthMode] =
+    useState<AuthMode>("login");
+
+  const [authFirstName, setAuthFirstName] =
+    useState("");
+
+  const [authPassword, setAuthPassword] =
+    useState("");
+
+  const [authPasswordConfirm, setAuthPasswordConfirm] =
+    useState("");
+
+  const [authSubmitting, setAuthSubmitting] =
+    useState(false);
+
+  const [authError, setAuthError] =
+    useState("");
+
   const [started, setStarted] =
     useState<boolean>(() => {
       return (
@@ -291,9 +329,66 @@ export default function App() {
      ========================================================= */
 
   useEffect(() => {
+    let mounted = true;
+
+    async function restoreSession() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!mounted) {
+        return;
+      }
+
+      if (session?.user) {
+        setCurrentUserId(session.user.id);
+        await loadCurrentProfile(session.user.id);
+      }
+
+      setAuthLoading(false);
+    }
+
+    restoreSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        const userId =
+          session?.user?.id || null;
+
+        setCurrentUserId(userId);
+
+        if (!userId) {
+          setCurrentProfile(null);
+          setTrips([]);
+          setDogs([]);
+          setSpeciesList([]);
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+
+  useEffect(() => {
+    if (!currentUserId) {
+      return;
+    }
+
     loadTrips();
     loadSettings();
-  }, []);
+
+    if (!currentProfile) {
+      loadCurrentProfile(
+        currentUserId
+      );
+    }
+  }, [currentUserId]);
 
 
   async function loadTrips() {
@@ -304,13 +399,10 @@ export default function App() {
       error,
     } = await supabase
       .from("sorties")
-      .select("*")
-      .order("date", {
-        ascending: false,
-      })
-      .order("created_at", {
-        ascending: false,
-      });
+.select("*")
+.order("date", {
+  ascending: false,
+})
 
     if (error) {
       console.error(
@@ -389,6 +481,237 @@ export default function App() {
     }
 
     setLoadingSettings(false);
+  }
+
+
+  /* =========================================================
+     AUTHENTIFICATION
+     ========================================================= */
+
+  function normalizeFirstName(
+    value: string
+  ) {
+    return value
+      .trim()
+      .normalize("NFD")
+      .replace(
+        /[\u0300-\u036f]/g,
+        ""
+      )
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9_-]/g,
+        ""
+      );
+  }
+
+
+  function technicalEmail(
+    firstName: string
+  ) {
+    return `${normalizeFirstName(
+      firstName
+    )}@users.carnet-chasse.app`;
+  }
+
+
+  async function loadCurrentProfile(
+    userId: string
+  ) {
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("profiles")
+      .select("id, prenom")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      console.error(
+        "Erreur chargement profil :",
+        error
+      );
+
+      return;
+    }
+
+    setCurrentProfile(
+      data as UserProfile
+    );
+  }
+
+
+  async function submitAuth() {
+    const firstName =
+      authFirstName.trim();
+
+    setAuthError("");
+
+    if (!firstName) {
+      setAuthError(
+        "Indique ton prénom."
+      );
+      return;
+    }
+
+    if (
+      normalizeFirstName(
+        firstName
+      ).length < 2
+    ) {
+      setAuthError(
+        "Le prénom doit contenir au moins 2 caractères."
+      );
+      return;
+    }
+
+    if (
+      authPassword.length < 6
+    ) {
+      setAuthError(
+        "Le mot de passe doit contenir au moins 6 caractères."
+      );
+      return;
+    }
+
+    if (
+      authMode === "register" &&
+      authPassword !==
+        authPasswordConfirm
+    ) {
+      setAuthError(
+        "Les deux mots de passe ne correspondent pas."
+      );
+      return;
+    }
+
+    setAuthSubmitting(true);
+
+    const email =
+      technicalEmail(firstName);
+
+    if (
+      authMode === "register"
+    ) {
+      const {
+        data,
+        error,
+      } = await supabase.auth.signUp({
+        email,
+        password:
+          authPassword,
+        options: {
+          data: {
+            prenom:
+              firstName,
+            prenom_normalise:
+              normalizeFirstName(
+                firstName
+              ),
+          },
+        },
+      });
+
+      if (error) {
+        console.error(
+          "ERREUR SUPABASE :",
+          error
+        );
+
+        setAuthError(
+          `Erreur Supabase : ${error.message}`
+        );
+
+        setAuthSubmitting(false);
+        return;
+      }
+
+      if (!data.session) {
+        setAuthError(
+          "Le profil a été créé, mais Supabase demande encore une confirmation. Vérifie que « Confirm email » est bien désactivé."
+        );
+
+        setAuthSubmitting(false);
+        return;
+      }
+
+      const userId =
+        data.user?.id ||
+        data.session.user.id;
+
+      setCurrentUserId(userId);
+
+      await loadCurrentProfile(
+        userId
+      );
+    } else {
+      const {
+        data,
+        error,
+      } =
+        await supabase.auth
+          .signInWithPassword({
+            email,
+            password:
+              authPassword,
+          });
+
+      if (error) {
+        console.error(error);
+
+        setAuthError(
+          "Prénom ou mot de passe incorrect."
+        );
+
+        setAuthSubmitting(false);
+        return;
+      }
+
+      setCurrentUserId(
+        data.user.id
+      );
+
+      await loadCurrentProfile(
+        data.user.id
+      );
+    }
+
+    setAuthPassword("");
+    setAuthPasswordConfirm("");
+    setAuthSubmitting(false);
+  }
+
+
+  async function logout() {
+    const confirmed =
+      window.confirm(
+        "Se déconnecter de ce profil ?"
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const {
+      error,
+    } =
+      await supabase.auth
+        .signOut();
+
+    if (error) {
+      console.error(error);
+
+      alert(
+        "Impossible de se déconnecter."
+      );
+
+      return;
+    }
+
+    setCurrentUserId(null);
+    setCurrentProfile(null);
+    setScreen("home");
   }
 
 
@@ -1042,6 +1365,9 @@ export default function App() {
 
       longitude:
         form.longitude,
+
+      created_by:
+        currentUserId,
     };
 
 
@@ -1288,6 +1614,222 @@ export default function App() {
     }
 
     await loadSettings();
+  }
+
+
+  /* =========================================================
+     CONNEXION / INSCRIPTION
+     ========================================================= */
+
+  if (authLoading) {
+    return (
+      <main className="auth-screen">
+        <section className="auth-card auth-loading-card">
+          <img
+            className="auth-logo"
+            src="/icon-512.png"
+            alt="Carnet-de-Chasse"
+          />
+
+          <p>
+            Ouverture du carnet...
+          </p>
+        </section>
+      </main>
+    );
+  }
+
+
+  if (!currentUserId) {
+    return (
+      <main className="auth-screen">
+        <section className="auth-card">
+
+          <div className="auth-brand">
+            <img
+              className="auth-logo"
+              src="/icon-512.png"
+              alt="Carnet-de-Chasse"
+            />
+
+            <span>
+              CARNET DE CHASSE
+            </span>
+
+            <h1>
+              {authMode === "login"
+                ? "Bienvenue"
+                : "Créer mon profil"}
+            </h1>
+
+            <p>
+              {authMode === "login"
+                ? "Connecte-toi simplement avec ton prénom et ton mot de passe."
+                : "Choisis un prénom unique et un mot de passe."}
+            </p>
+          </div>
+
+
+          <div className="auth-form">
+
+            <label>
+              Prénom
+            </label>
+
+            <div className="auth-input">
+              <UserRound
+                size={19}
+              />
+
+              <input
+                type="text"
+                autoComplete="username"
+                placeholder="Ton prénom"
+                value={
+                  authFirstName
+                }
+                onChange={(event) =>
+                  setAuthFirstName(
+                    event.target.value
+                  )
+                }
+              />
+            </div>
+
+
+            <label>
+              Mot de passe
+            </label>
+
+            <div className="auth-input">
+              <input
+                type="password"
+                autoComplete={
+                  authMode ===
+                  "login"
+                    ? "current-password"
+                    : "new-password"
+                }
+                placeholder="Ton mot de passe"
+                value={
+                  authPassword
+                }
+                onChange={(event) =>
+                  setAuthPassword(
+                    event.target.value
+                  )
+                }
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                      "Enter" &&
+                    authMode ===
+                      "login"
+                  ) {
+                    submitAuth();
+                  }
+                }}
+              />
+            </div>
+
+
+            {authMode ===
+              "register" && (
+              <>
+                <label>
+                  Confirmer le mot de passe
+                </label>
+
+                <div className="auth-input">
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Confirme ton mot de passe"
+                    value={
+                      authPasswordConfirm
+                    }
+                    onChange={(event) =>
+                      setAuthPasswordConfirm(
+                        event.target.value
+                      )
+                    }
+                    onKeyDown={(event) => {
+                      if (
+                        event.key ===
+                        "Enter"
+                      ) {
+                        submitAuth();
+                      }
+                    }}
+                  />
+                </div>
+              </>
+            )}
+
+
+            {authError && (
+              <div className="auth-error">
+                {authError}
+              </div>
+            )}
+
+
+            <button
+              type="button"
+              className="auth-submit"
+              onClick={
+                submitAuth
+              }
+              disabled={
+                authSubmitting
+              }
+            >
+              {authSubmitting
+                ? "Patiente..."
+                : authMode ===
+                    "login"
+                  ? "Se connecter"
+                  : "Créer mon profil"}
+            </button>
+
+          </div>
+
+
+          <div className="auth-switch">
+
+            <span>
+              {authMode ===
+              "login"
+                ? "Pas encore de profil ?"
+                : "Tu as déjà un profil ?"}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode(
+                  authMode ===
+                    "login"
+                    ? "register"
+                    : "login"
+                );
+
+                setAuthError("");
+                setAuthPassword("");
+                setAuthPasswordConfirm("");
+              }}
+            >
+              {authMode ===
+              "login"
+                ? "Créer mon profil"
+                : "Se connecter"}
+            </button>
+
+          </div>
+
+        </section>
+      </main>
+    );
   }
 
 
@@ -3479,6 +4021,54 @@ export default function App() {
   </div>
 
 </div>
+
+
+              <section className="hunting-settings-card auth-profile-card">
+
+                <div className="hunting-settings-card-header">
+
+                  <div className="hunting-settings-card-icon">
+                    <UserRound
+                      size={24}
+                    />
+                  </div>
+
+                  <div>
+                    <span>
+                      MON PROFIL
+                    </span>
+
+                    <strong>
+                      {currentProfile?.prenom ||
+                        authFirstName ||
+                        "Mon profil"}
+                    </strong>
+
+                    <small>
+                      Profil connecté
+                    </small>
+                  </div>
+
+                </div>
+
+
+                <div className="auth-profile-actions">
+
+                  <button
+                    type="button"
+                    className="auth-logout"
+                    onClick={logout}
+                  >
+                    <LogOut
+                      size={18}
+                    />
+
+                    Se déconnecter
+                  </button>
+
+                </div>
+
+              </section>
 
 
               {loadingSettings ? (
