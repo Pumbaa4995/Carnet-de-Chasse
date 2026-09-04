@@ -61,6 +61,8 @@ type HuntingTrip = {
   notes: string;
   latitude?: number | null;
   longitude?: number | null;
+  createdBy: string | null;
+  participants: UserProfile[];
 };
 
 type UserPosition = {
@@ -98,6 +100,7 @@ type TripForm = {
   notes: string;
   latitude: number | null;
   longitude: number | null;
+  participantIds: string[];
 };
 
 
@@ -239,6 +242,12 @@ export default function App() {
   const [speciesList, setSpeciesList] =
     useState<NamedItem[]>([]);
 
+  const [profiles, setProfiles] =
+    useState<UserProfile[]>([]);
+
+  const [loadingProfiles, setLoadingProfiles] =
+    useState(false);
+
   const [
     loadingSettings,
     setLoadingSettings,
@@ -316,6 +325,11 @@ export default function App() {
 
     latitude: null,
     longitude: null,
+
+    participantIds:
+      currentUserId
+        ? [currentUserId]
+        : [],
   });
 
   const [form, setForm] =
@@ -382,6 +396,7 @@ export default function App() {
 
     loadTrips();
     loadSettings();
+    loadProfiles();
 
     if (!currentProfile) {
       loadCurrentProfile(
@@ -399,10 +414,13 @@ export default function App() {
       error,
     } = await supabase
       .from("sorties")
-.select("*")
-.order("date", {
-  ascending: false,
-})
+      .select("*")
+      .order("date", {
+        ascending: false,
+      })
+      .order("created_at", {
+        ascending: false,
+      });
 
     if (error) {
       console.error(
@@ -414,38 +432,97 @@ export default function App() {
       return;
     }
 
+    const tripIds =
+      (data || []).map(
+        (item: any) => item.id
+      );
+
+    const participantsByTrip: Record<
+      string,
+      UserProfile[]
+    > = {};
+
+    if (tripIds.length > 0) {
+      const {
+        data: participantRows,
+        error: participantError,
+      } = await supabase
+        .from("sortie_participants")
+        .select(
+          "sortie_id, user_id, profiles(id, prenom)"
+        )
+        .in("sortie_id", tripIds);
+
+      if (participantError) {
+        console.error(
+          "Erreur chargement participants :",
+          participantError
+        );
+      } else {
+        (participantRows || []).forEach(
+          (row: any) => {
+            const profile =
+              Array.isArray(
+                row.profiles
+              )
+                ? row.profiles[0]
+                : row.profiles;
+
+            if (!profile) {
+              return;
+            }
+
+            if (
+              !participantsByTrip[
+                row.sortie_id
+              ]
+            ) {
+              participantsByTrip[
+                row.sortie_id
+              ] = [];
+            }
+
+            participantsByTrip[
+              row.sortie_id
+            ].push({
+              id: profile.id,
+              prenom:
+                profile.prenom,
+            });
+          }
+        );
+      }
+    }
+
     const formatted: HuntingTrip[] =
       (data || []).map(
         (item: any) => ({
           id: item.id,
-
           date: item.date,
-
           territory:
             item.territoire || "",
-
           huntType:
             item.type_chasse || "",
-
           harvests:
             item.prelevements || [],
-
           dogs:
             item.chiens || [],
-
           notes:
             item.observations || "",
-
           latitude:
             item.latitude,
-
           longitude:
             item.longitude,
+          createdBy:
+            item.created_by || null,
+          participants:
+            participantsByTrip[
+              item.id
+            ] || [],
         })
       );
 
     setTrips(formatted);
-
     setLoadingTrips(false);
   }
 
@@ -481,6 +558,36 @@ export default function App() {
     }
 
     setLoadingSettings(false);
+  }
+
+
+  async function loadProfiles() {
+    setLoadingProfiles(true);
+
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("profiles")
+      .select("id, prenom")
+      .order("prenom");
+
+    if (error) {
+      console.error(
+        "Erreur chargement profils :",
+        error
+      );
+
+      setProfiles([]);
+      setLoadingProfiles(false);
+      return;
+    }
+
+    setProfiles(
+      (data || []) as UserProfile[]
+    );
+
+    setLoadingProfiles(false);
   }
 
 
@@ -1047,6 +1154,7 @@ export default function App() {
     setSpecies("");
     setQuantity(1);
 
+    loadProfiles();
     setShowForm(true);
   }
 
@@ -1081,6 +1189,16 @@ export default function App() {
       longitude:
         trip.longitude ??
         null,
+
+      participantIds:
+        trip.participants.length > 0
+          ? trip.participants.map(
+              (profile) =>
+                profile.id
+            )
+          : currentUserId
+            ? [currentUserId]
+            : [],
     });
 
     setSpecies("");
@@ -1194,6 +1312,35 @@ export default function App() {
             ...current.dogs,
             dogName,
           ],
+    }));
+  }
+
+
+  function toggleParticipant(
+    userId: string
+  ) {
+    if (
+      userId ===
+      currentUserId
+    ) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+
+      participantIds:
+        current.participantIds.includes(
+          userId
+        )
+          ? current.participantIds.filter(
+              (id) =>
+                id !== userId
+            )
+          : [
+              ...current.participantIds,
+              userId,
+            ],
     }));
   }
 
@@ -1314,11 +1461,17 @@ export default function App() {
      ========================================================= */
 
   async function saveTrip() {
+    if (!currentUserId) {
+      alert(
+        "Tu dois être connecté pour enregistrer une sortie."
+      );
+      return;
+    }
+
     if (!form.date) {
       alert(
         "Indique la date de la sortie."
       );
-
       return;
     }
 
@@ -1328,7 +1481,6 @@ export default function App() {
       alert(
         "Indique le territoire."
       );
-
       return;
     }
 
@@ -1338,88 +1490,131 @@ export default function App() {
       alert(
         "Indique le type de chasse."
       );
-
       return;
     }
 
     const payload = {
       date: form.date,
-
       territoire:
         form.territory.trim(),
-
       type_chasse:
         form.huntType.trim(),
-
       prelevements:
         form.harvests,
-
       chiens:
         form.dogs,
-
       observations:
         form.notes.trim(),
-
       latitude:
         form.latitude,
-
       longitude:
         form.longitude,
-
       created_by:
         currentUserId,
     };
 
+    const participantIds =
+      Array.from(
+        new Set([
+          currentUserId,
+          ...form.participantIds,
+        ])
+      );
+
+    let savedTripId =
+      editingTripId;
 
     if (editingTripId) {
-      const {
-        error,
-      } = await supabase
-        .from("sorties")
-        .update(payload)
-        .eq(
-          "id",
-          editingTripId
-        );
+      const { error } =
+        await supabase
+          .from("sorties")
+          .update(payload)
+          .eq(
+            "id",
+            editingTripId
+          );
 
       if (error) {
-        console.error(
-          error
-        );
-
+        console.error(error);
         alert(
           "Erreur lors de la modification."
         );
+        return;
+      }
 
+      const {
+        error: deleteParticipantsError,
+      } = await supabase
+        .from(
+          "sortie_participants"
+        )
+        .delete()
+        .eq(
+          "sortie_id",
+          editingTripId
+        );
+
+      if (
+        deleteParticipantsError
+      ) {
+        console.error(
+          deleteParticipantsError
+        );
+        alert(
+          "La sortie a été modifiée, mais les participants n'ont pas pu être mis à jour."
+        );
         return;
       }
     } else {
-      const {
-        error,
-      } = await supabase
-        .from("sorties")
-        .insert({
-          id:
-            crypto.randomUUID(),
+      savedTripId =
+        crypto.randomUUID();
 
-          ...payload,
-        });
+      const { error } =
+        await supabase
+          .from("sorties")
+          .insert({
+            id: savedTripId,
+            ...payload,
+          });
 
       if (error) {
-        console.error(
-          error
-        );
-
+        console.error(error);
         alert(
           "Erreur lors de l'enregistrement."
         );
+        return;
+      }
+    }
 
+    if (savedTripId) {
+      const {
+        error: participantsError,
+      } = await supabase
+        .from(
+          "sortie_participants"
+        )
+        .insert(
+          participantIds.map(
+            (userId) => ({
+              sortie_id:
+                savedTripId,
+              user_id: userId,
+            })
+          )
+        );
+
+      if (participantsError) {
+        console.error(
+          participantsError
+        );
+        alert(
+          "La sortie est enregistrée, mais les participants n'ont pas pu être enregistrés."
+        );
         return;
       }
     }
 
     closeForm();
-
     await loadTrips();
   }
 
@@ -1890,12 +2085,8 @@ export default function App() {
             />
 
             <div>
-              <small>
-                Carnet
-              </small>
-
               <strong>
-                de Chasse
+                Carnet de Chasse
               </strong>
             </div>
           </div>
@@ -2277,19 +2468,22 @@ export default function App() {
                     </div>
 
 
-                    <button
-                      className="new-edit-button"
-                      type="button"
-                      onClick={() =>
-                        editTrip(
-                          trips[0]
-                        )
-                      }
-                    >
-                      <Pencil
-                        size={19}
-                      />
-                    </button>
+                    {trips[0].createdBy ===
+                      currentUserId && (
+                      <button
+                        className="new-edit-button"
+                        type="button"
+                        onClick={() =>
+                          editTrip(
+                            trips[0]
+                          )
+                        }
+                      >
+                        <Pencil
+                          size={19}
+                        />
+                      </button>
+                    )}
 
                   </div>
 
@@ -2826,22 +3020,25 @@ export default function App() {
                         </div>
 
 
-                        <button
-                          type="button"
-                          className="carnet-edit"
-                          aria-label="Modifier la sortie"
-                          onClick={() =>
-                            editTrip(
-                              trip
-                            )
-                          }
-                        >
-                          <Pencil
-                            size={
-                              18
+                        {trip.createdBy ===
+                          currentUserId && (
+                          <button
+                            type="button"
+                            className="carnet-edit"
+                            aria-label="Modifier la sortie"
+                            onClick={() =>
+                              editTrip(
+                                trip
+                              )
                             }
-                          />
-                        </button>
+                          >
+                            <Pencil
+                              size={
+                                18
+                              }
+                            />
+                          </button>
+                        )}
 
                       </div>
 
@@ -2984,46 +3181,49 @@ export default function App() {
 
                       {/* ACTIONS */}
 
-                      <div className="carnet-actions">
+                      {trip.createdBy ===
+                        currentUserId && (
+                        <div className="carnet-actions">
 
-                        <button
-                          type="button"
-                          className="carnet-modify"
-                          onClick={() =>
-                            editTrip(
-                              trip
-                            )
-                          }
-                        >
-                          <Pencil
-                            size={
-                              17
+                          <button
+                            type="button"
+                            className="carnet-modify"
+                            onClick={() =>
+                              editTrip(
+                                trip
+                              )
                             }
-                          />
+                          >
+                            <Pencil
+                              size={
+                                17
+                              }
+                            />
 
-                          Modifier
-                        </button>
+                            Modifier
+                          </button>
 
 
-                        <button
-                          type="button"
-                          className="carnet-delete"
-                          onClick={() =>
-                            deleteTrip(
-                              trip.id
-                            )
-                          }
-                        >
-                          <Trash2
-                            size={
-                              17
+                          <button
+                            type="button"
+                            className="carnet-delete"
+                            onClick={() =>
+                              deleteTrip(
+                                trip.id
+                              )
                             }
-                          />
+                          >
+                            <Trash2
+                              size={
+                                17
+                              }
+                            />
 
-                          Supprimer
-                        </button>
+                            Supprimer
+                          </button>
 
-                      </div>
+                        </div>
+                      )}
 
                     </article>
                   )
@@ -3326,21 +3526,24 @@ export default function App() {
                       )}
 
 
-                      <button
-                        type="button"
-                        className="hunting-map-popup-edit"
-                        onClick={() =>
-                          editTrip(
-                            trip
-                          )
-                        }
-                      >
-                        <Pencil
-                          size={16}
-                        />
+                      {trip.createdBy ===
+                        currentUserId && (
+                        <button
+                          type="button"
+                          className="hunting-map-popup-edit"
+                          onClick={() =>
+                            editTrip(
+                              trip
+                            )
+                          }
+                        >
+                          <Pencil
+                            size={16}
+                          />
 
-                        Modifier cette sortie
-                      </button>
+                          Modifier cette sortie
+                        </button>
+                      )}
 
                     </article>
 
@@ -4565,6 +4768,81 @@ export default function App() {
                     Autre
                   </option>
                 </select>
+              </div>
+
+
+              {/* PARTICIPANTS */}
+
+              <div className="form-group">
+                <label>
+                  Participants
+                </label>
+
+                <p className="participant-help">
+                  Ton profil est toujours inclus. Sélectionne les autres profils présents à cette sortie.
+                </p>
+
+                <div className="participant-grid">
+                  {loadingProfiles ? (
+                    <p className="participant-help">
+                      Chargement des profils...
+                    </p>
+                  ) : profiles.length === 0 ? (
+                    <p className="participant-help">
+                      Aucun profil disponible.
+                    </p>
+                  ) : (
+                    profiles.map(
+                      (profile) => {
+                        const isMe =
+                          profile.id ===
+                          currentUserId;
+
+                        const selected =
+                          isMe ||
+                          form.participantIds.includes(
+                            profile.id
+                          );
+
+                        return (
+                          <button
+                            key={
+                              profile.id
+                            }
+                            type="button"
+                            className={
+                              selected
+                                ? "participant-chip selected"
+                                : "participant-chip"
+                            }
+                            onClick={() =>
+                              toggleParticipant(
+                                profile.id
+                              )
+                            }
+                            disabled={
+                              isMe
+                            }
+                          >
+                            <UserRound
+                              size={16}
+                            />
+
+                            {
+                              profile.prenom
+                            }
+
+                            {isMe && (
+                              <small>
+                                Moi
+                              </small>
+                            )}
+                          </button>
+                        );
+                      }
+                    )
+                  )}
+                </div>
               </div>
 
 
