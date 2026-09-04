@@ -2434,6 +2434,13 @@ export default function App() {
                         )}
                       </strong>
 
+                      {trips[0].participants.length > 1 && (
+                        <span className="shared-trip-badge">
+                          <UserRound size={14} />
+                          Sortie partagée
+                        </span>
+                      )}
+
                       <div className="new-last-meta">
                         <span>
                           <MapPin
@@ -2542,6 +2549,30 @@ export default function App() {
                         : "Aucun chien"}
                     </div>
                   </div>
+
+
+                  {trips[0].participants.length > 1 && (
+                    <div className="new-last-line">
+                      <div className="new-last-label">
+                        <UserRound
+                          size={20}
+                        />
+
+                        <span>
+                          Participants
+                        </span>
+                      </div>
+
+                      <div className="new-last-value">
+                        {trips[0].participants
+                          .map(
+                            (profile) =>
+                              profile.prenom
+                          )
+                          .join(" • ")}
+                      </div>
+                    </div>
+                  )}
 
 
                   <button
@@ -2977,11 +3008,20 @@ export default function App() {
 
                         <div className="carnet-trip-main">
 
-                          <span className="carnet-trip-type">
-                            {
-                              trip.huntType
-                            }
-                          </span>
+                          <div className="carnet-trip-badges">
+                            <span className="carnet-trip-type">
+                              {
+                                trip.huntType
+                              }
+                            </span>
+
+                            {trip.participants.length > 1 && (
+                              <span className="shared-trip-badge">
+                                <UserRound size={13} />
+                                Sortie partagée
+                              </span>
+                            )}
+                          </div>
 
                           <h2>
                             {
@@ -3129,6 +3169,36 @@ export default function App() {
                           </div>
 
                         </div>
+
+
+                        {trip.participants.length > 1 && (
+                          <div className="carnet-info-row">
+
+                            <div className="carnet-info-icon">
+                              <UserRound
+                                size={
+                                  19
+                                }
+                              />
+                            </div>
+
+                            <div>
+                              <span>
+                                Participants
+                              </span>
+
+                              <p>
+                                {trip.participants
+                                  .map(
+                                    (profile) =>
+                                      profile.prenom
+                                  )
+                                  .join(" • ")}
+                              </p>
+                            </div>
+
+                          </div>
+                        )}
 
 
                         {trip.latitude !=
@@ -3513,6 +3583,22 @@ export default function App() {
                         </div>
 
                       </div>
+
+
+                      {trip.participants.length > 1 && (
+                        <div className="hunting-map-popup-participants">
+                          <UserRound size={16} />
+
+                          <span>
+                            {trip.participants
+                              .map(
+                                (profile) =>
+                                  profile.prenom
+                              )
+                              .join(" • ")}
+                          </span>
+                        </div>
+                      )}
 
 
                       {trip.notes && (

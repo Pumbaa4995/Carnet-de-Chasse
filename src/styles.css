@@ -5385,3 +5385,71 @@ span {
     height: 17px;
   }
 }
+
+
+/* =========================================================
+   SORTIES PARTAGÉES
+   ========================================================= */
+
+.shared-trip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 5px 9px;
+  border: 1px solid rgba(40, 88, 61, 0.18);
+  border-radius: 999px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.new-last-title > .shared-trip-badge {
+  margin-top: 7px;
+  margin-bottom: 2px;
+}
+
+.carnet-trip-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 5px;
+}
+
+.carnet-trip-badges .carnet-trip-type {
+  margin-bottom: 0;
+}
+
+.hunting-map-popup-participants {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.hunting-map-popup-participants svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+@media (max-width: 500px) {
+  .shared-trip-badge {
+    padding: 4px 8px;
+    font-size: 0.68rem;
+  }
+
+  .carnet-trip-badges {
+    gap: 6px;
+  }
+}
