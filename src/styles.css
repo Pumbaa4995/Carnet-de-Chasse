@@ -5453,3 +5453,161 @@ span {
     gap: 6px;
   }
 }
+
+
+/* =========================================================
+   DONNÉES COMPLÉMENTAIRES DES SORTIES
+   ========================================================= */
+
+.trip-extra-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.trip-extra-grid .form-group {
+  margin: 0;
+}
+
+.trip-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.trip-metrics-row > span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 58px;
+  padding: 8px 6px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-light);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.trip-metrics-row > span strong {
+  margin-bottom: 2px;
+  color: var(--green-dark);
+  font-family: Georgia, serif;
+  font-size: 1rem;
+}
+
+.carnet-trip-metrics {
+  margin: 12px 0 0;
+}
+
+.hunting-map-popup-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.hunting-map-popup-metrics span {
+  padding: 7px 5px;
+  border-radius: 10px;
+  background: #f5f2e8;
+  color: var(--text-light);
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.hunting-map-popup-metrics strong {
+  color: var(--green-dark);
+}
+
+@media (max-width: 560px) {
+  .trip-extra-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trip-metrics-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+
+/* =========================================================
+   STATS - DONNÉES DE TERRAIN
+   ========================================================= */
+
+.hunting-stats-section-title.trip-data-title {
+  margin-top: 22px;
+}
+
+.hunting-stats-trip-data {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.hunting-stats-trip-data article {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: 17px 8px 15px;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgba(30, 55, 40, 0.05);
+  text-align: center;
+}
+
+.hunting-stats-trip-data-icon {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  margin-bottom: 9px;
+  border-radius: 12px;
+  background: var(--green-light);
+  color: var(--green-dark);
+}
+
+.hunting-stats-trip-data article strong {
+  color: var(--green-dark);
+  font-family: Georgia, serif;
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.hunting-stats-trip-data article span {
+  margin-top: 5px;
+  color: var(--text-light);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+@media (max-width: 500px) {
+  .hunting-stats-trip-data {
+    gap: 7px;
+  }
+
+  .hunting-stats-trip-data article {
+    padding: 14px 5px 13px;
+    border-radius: 15px;
+  }
+
+  .hunting-stats-trip-data-icon {
+    width: 35px;
+    height: 35px;
+  }
+
+  .hunting-stats-trip-data article strong {
+    font-size: 1.18rem;
+  }
+
+  .hunting-stats-trip-data article span {
+    font-size: 0.68rem;
+  }
+}

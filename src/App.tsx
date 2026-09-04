@@ -63,6 +63,9 @@ type HuntingTrip = {
   longitude?: number | null;
   createdBy: string | null;
   participants: UserProfile[];
+  distanceKm: number;
+  postedParticipants: number;
+  ammunitionFired: number;
 };
 
 type UserPosition = {
@@ -101,6 +104,9 @@ type TripForm = {
   latitude: number | null;
   longitude: number | null;
   participantIds: string[];
+  distanceKm: number;
+  postedParticipants: number;
+  ammunitionFired: number;
 };
 
 
@@ -330,6 +336,10 @@ export default function App() {
       currentUserId
         ? [currentUserId]
         : [],
+
+    distanceKm: 0,
+    postedParticipants: 0,
+    ammunitionFired: 0,
   });
 
   const [form, setForm] =
@@ -519,6 +529,12 @@ export default function App() {
             participantsByTrip[
               item.id
             ] || [],
+          distanceKm:
+            Number(item.distance_km || 0),
+          postedParticipants:
+            Number(item.nombre_postes || 0),
+          ammunitionFired:
+            Number(item.munitions_tirees || 0),
         })
       );
 
@@ -1080,6 +1096,36 @@ export default function App() {
     }, [trips]);
 
 
+  const totalDistanceKm =
+    useMemo(() => {
+      return trips.reduce(
+        (total, trip) =>
+          total + Number(trip.distanceKm || 0),
+        0
+      );
+    }, [trips]);
+
+
+  const totalPostedParticipants =
+    useMemo(() => {
+      return trips.reduce(
+        (total, trip) =>
+          total + Number(trip.postedParticipants || 0),
+        0
+      );
+    }, [trips]);
+
+
+  const totalAmmunitionFired =
+    useMemo(() => {
+      return trips.reduce(
+        (total, trip) =>
+          total + Number(trip.ammunitionFired || 0),
+        0
+      );
+    }, [trips]);
+
+
   const filteredTrips =
     useMemo(() => {
       const search =
@@ -1199,6 +1245,15 @@ export default function App() {
           : currentUserId
             ? [currentUserId]
             : [],
+
+      distanceKm:
+        trip.distanceKm || 0,
+
+      postedParticipants:
+        trip.postedParticipants || 0,
+
+      ammunitionFired:
+        trip.ammunitionFired || 0,
     });
 
     setSpecies("");
@@ -1509,6 +1564,12 @@ export default function App() {
         form.latitude,
       longitude:
         form.longitude,
+      distance_km:
+        Number(form.distanceKm || 0),
+      nombre_postes:
+        Number(form.postedParticipants || 0),
+      munitions_tirees:
+        Number(form.ammunitionFired || 0),
       created_by:
         currentUserId,
     };
@@ -2575,6 +2636,28 @@ export default function App() {
                   )}
 
 
+                  {(trips[0].distanceKm > 0 ||
+                    trips[0].postedParticipants > 0 ||
+                    trips[0].ammunitionFired > 0) && (
+                    <div className="trip-metrics-row">
+                      <span>
+                        <strong>{trips[0].distanceKm}</strong>
+                        km
+                      </span>
+
+                      <span>
+                        <strong>{trips[0].postedParticipants}</strong>
+                        postés
+                      </span>
+
+                      <span>
+                        <strong>{trips[0].ammunitionFired}</strong>
+                        munitions
+                      </span>
+                    </div>
+                  )}
+
+
                   <button
                     className="new-open-carnet"
                     type="button"
@@ -3232,6 +3315,28 @@ export default function App() {
                       </div>
 
 
+                      {(trip.distanceKm > 0 ||
+                        trip.postedParticipants > 0 ||
+                        trip.ammunitionFired > 0) && (
+                        <div className="trip-metrics-row carnet-trip-metrics">
+                          <span>
+                            <strong>{trip.distanceKm}</strong>
+                            km
+                          </span>
+
+                          <span>
+                            <strong>{trip.postedParticipants}</strong>
+                            postés
+                          </span>
+
+                          <span>
+                            <strong>{trip.ammunitionFired}</strong>
+                            munitions
+                          </span>
+                        </div>
+                      )}
+
+
                       {/* NOTES */}
 
                       {trip.notes && (
@@ -3585,6 +3690,25 @@ export default function App() {
                       </div>
 
 
+                      {(trip.distanceKm > 0 ||
+                        trip.postedParticipants > 0 ||
+                        trip.ammunitionFired > 0) && (
+                        <div className="hunting-map-popup-metrics">
+                          <span>
+                            <strong>{trip.distanceKm}</strong> km
+                          </span>
+
+                          <span>
+                            <strong>{trip.postedParticipants}</strong> postés
+                          </span>
+
+                          <span>
+                            <strong>{trip.ammunitionFired}</strong> munitions
+                          </span>
+                        </div>
+                      )}
+
+
                       {trip.participants.length > 1 && (
                         <div className="hunting-map-popup-participants">
                           <UserRound size={16} />
@@ -3880,6 +4004,74 @@ export default function App() {
           Lieux de chasse différents
         </small>
 
+      </article>
+
+    </section>
+
+
+    {/* DONNÉES DE TERRAIN */}
+
+    <div className="hunting-stats-section-title trip-data-title">
+
+      <div>
+        <span>
+          DONNÉES DE TERRAIN
+        </span>
+
+        <h2>
+          Bilan de mes sorties
+        </h2>
+      </div>
+
+    </div>
+
+
+    <section className="hunting-stats-trip-data">
+
+      <article>
+        <div className="hunting-stats-trip-data-icon">
+          <MapPin size={22} />
+        </div>
+
+        <strong>
+          {Number.isInteger(totalDistanceKm)
+            ? totalDistanceKm
+            : totalDistanceKm.toFixed(1).replace(".", ",")}
+        </strong>
+
+        <span>
+          km parcourus
+        </span>
+      </article>
+
+
+      <article>
+        <div className="hunting-stats-trip-data-icon">
+          <UserRound size={22} />
+        </div>
+
+        <strong>
+          {totalPostedParticipants}
+        </strong>
+
+        <span>
+          postés cumulés
+        </span>
+      </article>
+
+
+      <article>
+        <div className="hunting-stats-trip-data-icon">
+          <Crosshair size={22} />
+        </div>
+
+        <strong>
+          {totalAmmunitionFired}
+        </strong>
+
+        <span>
+          munitions tirées
+        </span>
       </article>
 
     </section>
@@ -4854,6 +5046,106 @@ export default function App() {
                     Autre
                   </option>
                 </select>
+              </div>
+
+
+              {/* DONNÉES DE LA SORTIE */}
+
+              <div className="trip-extra-grid">
+
+                <div className="form-group">
+                  <label>
+                    Distance parcourue (km)
+                  </label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    inputMode="decimal"
+                    placeholder="Ex. 8,5"
+                    value={
+                      form.distanceKm
+                    }
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        distanceKm:
+                          Math.max(
+                            0,
+                            Number(
+                              event.target.value
+                            )
+                          ),
+                      })
+                    }
+                  />
+                </div>
+
+
+                <div className="form-group">
+                  <label>
+                    Nombre de postés
+                  </label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputMode="numeric"
+                    placeholder="Ex. 12"
+                    value={
+                      form.postedParticipants
+                    }
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        postedParticipants:
+                          Math.max(
+                            0,
+                            Math.floor(
+                              Number(
+                                event.target.value
+                              )
+                            )
+                          ),
+                      })
+                    }
+                  />
+                </div>
+
+
+                <div className="form-group">
+                  <label>
+                    Munitions tirées
+                  </label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputMode="numeric"
+                    placeholder="Ex. 4"
+                    value={
+                      form.ammunitionFired
+                    }
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        ammunitionFired:
+                          Math.max(
+                            0,
+                            Math.floor(
+                              Number(
+                                event.target.value
+                              )
+                            )
+                          ),
+                      })
+                    }
+                  />
+                </div>
+
               </div>
 
 
