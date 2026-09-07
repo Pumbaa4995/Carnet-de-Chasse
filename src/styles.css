@@ -5611,3 +5611,239 @@ span {
     font-size: 0.68rem;
   }
 }
+
+/* =========================================================
+   RÉGLAGES — MES GROUPES
+   Étape 1 : création et gestion des membres
+   ========================================================= */
+
+.hunting-groups-card {
+  overflow: hidden;
+}
+
+.hunting-groups-create {
+  padding: 15px;
+  border-bottom: 1px solid #ebe8df;
+  background: #f7f4ec;
+}
+
+.hunting-groups-create > label {
+  display: block;
+  margin-bottom: 8px;
+  color: #405348;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.hunting-groups-create-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 8px;
+}
+
+.hunting-groups-create-row input {
+  min-width: 0;
+  height: 44px;
+  padding: 0 13px;
+  border: 1px solid #dedbd1;
+  border-radius: 13px;
+  background: #fff;
+  color: #32483b;
+  font-size: 0.8rem;
+}
+
+.hunting-groups-create-row > button {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 13px;
+  background: #28583d;
+  color: #fff;
+  cursor: pointer;
+}
+
+.hunting-groups-create-row > button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.hunting-groups-help {
+  display: block;
+  margin: 10px 0 9px;
+  color: #7f8b84;
+  font-size: 0.69rem;
+  line-height: 1.4;
+}
+
+.hunting-groups-profile-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hunting-group-profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hunting-group-profile-chip.selected {
+  border-color: var(--green);
+  background: var(--green-light);
+  color: var(--green-dark);
+}
+
+.hunting-group-profile-chip:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.hunting-group-profile-chip small {
+  padding-left: 2px;
+  color: var(--green);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.hunting-groups-list {
+  padding: 5px 15px 10px;
+}
+
+.hunting-groups-empty {
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 18px 8px;
+  color: #929c96;
+  text-align: center;
+  font-size: 0.72rem;
+}
+
+.hunting-groups-empty strong {
+  color: #405348;
+  font-family: Georgia, serif;
+  font-size: 0.9rem;
+}
+
+.hunting-groups-empty span {
+  max-width: 280px;
+  line-height: 1.4;
+}
+
+.hunting-group-item {
+  padding: 14px 0;
+  border-bottom: 1px solid #efede7;
+}
+
+.hunting-group-item:last-child {
+  border-bottom: 0;
+}
+
+.hunting-group-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hunting-group-item-top > div {
+  min-width: 0;
+}
+
+.hunting-group-item-top strong {
+  display: block;
+  overflow: hidden;
+  color: #294837;
+  font-family: Georgia, serif;
+  font-size: 0.95rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hunting-group-item-top span {
+  display: block;
+  margin-top: 3px;
+  color: #8a958f;
+  font-size: 0.62rem;
+}
+
+.hunting-group-delete {
+  width: 35px;
+  height: 35px;
+  flex: 0 0 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 11px;
+  background: #f7efec;
+  color: #a45b4d;
+  cursor: pointer;
+}
+
+.hunting-group-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 11px;
+}
+
+.hunting-group-member {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #eef1e9;
+  color: #45604f;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.hunting-group-manage {
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px dashed #dfddd5;
+}
+
+.hunting-group-manage > small {
+  display: block;
+  margin-bottom: 8px;
+  color: #7f8b84;
+  font-size: 0.61rem;
+  font-weight: 750;
+}
+
+@media (max-width: 500px) {
+  .hunting-groups-create,
+  .hunting-groups-list {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .hunting-group-profile-chip {
+    min-height: 40px;
+    padding: 9px 12px;
+    font-size: 0.88rem;
+  }
+}
+

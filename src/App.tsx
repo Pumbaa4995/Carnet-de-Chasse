@@ -83,6 +83,13 @@ type UserProfile = {
   prenom: string;
 };
 
+type HuntingGroup = {
+  id: string;
+  nom: string;
+  createdBy: string;
+  members: UserProfile[];
+};
+
 type AuthMode =
   | "login"
   | "register";
@@ -254,6 +261,21 @@ export default function App() {
   const [loadingProfiles, setLoadingProfiles] =
     useState(false);
 
+  const [groups, setGroups] =
+    useState<HuntingGroup[]>([]);
+
+  const [loadingGroups, setLoadingGroups] =
+    useState(false);
+
+  const [newGroupName, setNewGroupName] =
+    useState("");
+
+  const [newGroupMemberIds, setNewGroupMemberIds] =
+    useState<string[]>([]);
+
+  const [savingGroup, setSavingGroup] =
+    useState(false);
+
   const [
     loadingSettings,
     setLoadingSettings,
@@ -388,6 +410,9 @@ export default function App() {
           setTrips([]);
           setDogs([]);
           setSpeciesList([]);
+          setProfiles([]);
+          setGroups([]);
+          setNewGroupMemberIds([]);
         }
       }
     );
@@ -407,6 +432,7 @@ export default function App() {
     loadTrips();
     loadSettings();
     loadProfiles();
+    loadGroups();
 
     if (!currentProfile) {
       loadCurrentProfile(
@@ -604,6 +630,97 @@ export default function App() {
     );
 
     setLoadingProfiles(false);
+  }
+
+
+  async function loadGroups() {
+    if (!currentUserId) {
+      setGroups([]);
+      return;
+    }
+
+    setLoadingGroups(true);
+
+    const {
+      data: groupRows,
+      error: groupsError,
+    } = await supabase
+      .from("groupes")
+      .select("id, nom, created_by")
+      .order("nom");
+
+    if (groupsError) {
+      console.error(
+        "Erreur chargement groupes :",
+        groupsError
+      );
+
+      setGroups([]);
+      setLoadingGroups(false);
+      return;
+    }
+
+    const groupIds = (groupRows || []).map(
+      (group: any) => group.id
+    );
+
+    const membersByGroup: Record<
+      string,
+      UserProfile[]
+    > = {};
+
+    if (groupIds.length > 0) {
+      const {
+        data: memberRows,
+        error: membersError,
+      } = await supabase
+        .from("groupe_membres")
+        .select(
+          "groupe_id, user_id, profiles(id, prenom)"
+        )
+        .in("groupe_id", groupIds);
+
+      if (membersError) {
+        console.error(
+          "Erreur chargement membres des groupes :",
+          membersError
+        );
+      } else {
+        (memberRows || []).forEach(
+          (row: any) => {
+            const profile = Array.isArray(
+              row.profiles
+            )
+              ? row.profiles[0]
+              : row.profiles;
+
+            if (!profile) {
+              return;
+            }
+
+            if (!membersByGroup[row.groupe_id]) {
+              membersByGroup[row.groupe_id] = [];
+            }
+
+            membersByGroup[row.groupe_id].push({
+              id: profile.id,
+              prenom: profile.prenom,
+            });
+          }
+        );
+      }
+    }
+
+    setGroups(
+      (groupRows || []).map((group: any) => ({
+        id: group.id,
+        nom: group.nom,
+        createdBy: group.created_by,
+        members: membersByGroup[group.id] || [],
+      }))
+    );
+
+    setLoadingGroups(false);
   }
 
 
@@ -1712,6 +1829,174 @@ export default function App() {
     }
 
     await loadTrips();
+  }
+
+
+  /* =========================================================
+     GROUPES DE PROFILS
+     ========================================================= */
+
+  function toggleNewGroupMember(
+    userId: string
+  ) {
+    if (userId === currentUserId) {
+      return;
+    }
+
+    setNewGroupMemberIds((current) =>
+      current.includes(userId)
+        ? current.filter((id) => id !== userId)
+        : [...current, userId]
+    );
+  }
+
+
+  async function createGroup() {
+    if (!currentUserId) {
+      return;
+    }
+
+    const name = newGroupName.trim();
+
+    if (!name) {
+      alert("Indique le nom du groupe.");
+      return;
+    }
+
+    setSavingGroup(true);
+
+    const {
+      data: createdGroup,
+      error: groupError,
+    } = await supabase
+      .from("groupes")
+      .insert({
+        nom: name,
+        created_by: currentUserId,
+      })
+      .select("id, nom, created_by")
+      .single();
+
+    if (groupError || !createdGroup) {
+      console.error(groupError);
+      alert("Impossible de créer le groupe.");
+      setSavingGroup(false);
+      return;
+    }
+
+    const memberIds = Array.from(
+      new Set([
+        currentUserId,
+        ...newGroupMemberIds,
+      ])
+    );
+
+    const { error: membersError } = await supabase
+      .from("groupe_membres")
+      .insert(
+        memberIds.map((userId) => ({
+          groupe_id: createdGroup.id,
+          user_id: userId,
+        }))
+      );
+
+    if (membersError) {
+      console.error(membersError);
+
+      await supabase
+        .from("groupes")
+        .delete()
+        .eq("id", createdGroup.id);
+
+      alert(
+        "Le groupe n'a pas pu être créé avec ses membres."
+      );
+      setSavingGroup(false);
+      return;
+    }
+
+    setNewGroupName("");
+    setNewGroupMemberIds([]);
+    setSavingGroup(false);
+
+    await loadGroups();
+  }
+
+
+  async function toggleExistingGroupMember(
+    group: HuntingGroup,
+    userId: string
+  ) {
+    if (group.createdBy !== currentUserId) {
+      return;
+    }
+
+    if (userId === currentUserId) {
+      return;
+    }
+
+    const alreadyMember = group.members.some(
+      (member) => member.id === userId
+    );
+
+    if (alreadyMember) {
+      const { error } = await supabase
+        .from("groupe_membres")
+        .delete()
+        .eq("groupe_id", group.id)
+        .eq("user_id", userId);
+
+      if (error) {
+        console.error(error);
+        alert("Impossible de retirer ce membre.");
+        return;
+      }
+    } else {
+      const { error } = await supabase
+        .from("groupe_membres")
+        .insert({
+          groupe_id: group.id,
+          user_id: userId,
+        });
+
+      if (error) {
+        console.error(error);
+        alert("Impossible d'ajouter ce membre.");
+        return;
+      }
+    }
+
+    await loadGroups();
+  }
+
+
+  async function deleteGroup(
+    group: HuntingGroup
+  ) {
+    if (group.createdBy !== currentUserId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Supprimer le groupe « ${group.nom} » ?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("groupes")
+      .delete()
+      .eq("id", group.id);
+
+    if (error) {
+      console.error(error);
+      alert("Impossible de supprimer ce groupe.");
+      return;
+    }
+
+    await loadGroups();
   }
 
 
@@ -4546,6 +4831,246 @@ export default function App() {
 
                     Se déconnecter
                   </button>
+
+                </div>
+
+              </section>
+
+
+              <section className="hunting-settings-card hunting-groups-card">
+
+                <div className="hunting-settings-card-header">
+
+                  <div className="hunting-settings-card-icon">
+                    <UserRound size={24} />
+                  </div>
+
+                  <div>
+                    <span>
+                      MES GROUPES
+                    </span>
+
+                    <strong>
+                      Groupes de chasse
+                    </strong>
+
+                    <small>
+                      {groups.length}{" "}
+                      {groups.length > 1
+                        ? "groupes disponibles"
+                        : "groupe disponible"}
+                    </small>
+                  </div>
+
+                </div>
+
+
+                <div className="hunting-groups-create">
+
+                  <label htmlFor="new-group-name">
+                    Créer un groupe
+                  </label>
+
+                  <div className="hunting-groups-create-row">
+                    <input
+                      id="new-group-name"
+                      type="text"
+                      placeholder="Ex. Équipe de Vernoil"
+                      value={newGroupName}
+                      onChange={(event) =>
+                        setNewGroupName(
+                          event.target.value
+                        )
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          createGroup();
+                        }
+                      }}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={createGroup}
+                      disabled={savingGroup}
+                      aria-label="Créer le groupe"
+                    >
+                      <Plus size={21} />
+                    </button>
+                  </div>
+
+
+                  <p className="hunting-groups-help">
+                    Ton profil sera automatiquement membre.
+                    Sélectionne les autres profils à ajouter.
+                  </p>
+
+
+                  <div className="hunting-groups-profile-grid">
+                    {loadingProfiles ? (
+                      <span className="hunting-groups-help">
+                        Chargement des profils...
+                      </span>
+                    ) : (
+                      profiles.map((profile) => {
+                        const isMe =
+                          profile.id === currentUserId;
+
+                        const selected =
+                          isMe ||
+                          newGroupMemberIds.includes(
+                            profile.id
+                          );
+
+                        return (
+                          <button
+                            key={profile.id}
+                            type="button"
+                            className={
+                              selected
+                                ? "hunting-group-profile-chip selected"
+                                : "hunting-group-profile-chip"
+                            }
+                            onClick={() =>
+                              toggleNewGroupMember(
+                                profile.id
+                              )
+                            }
+                            disabled={isMe}
+                          >
+                            <UserRound size={15} />
+                            {profile.prenom}
+                            {isMe && <small>Moi</small>}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+
+                </div>
+
+
+                <div className="hunting-groups-list">
+
+                  {loadingGroups ? (
+                    <div className="hunting-groups-empty">
+                      Chargement des groupes...
+                    </div>
+                  ) : groups.length === 0 ? (
+                    <div className="hunting-groups-empty">
+                      <UserRound size={28} />
+                      <strong>Aucun groupe</strong>
+                      <span>
+                        Crée ton premier groupe de chasse ci-dessus.
+                      </span>
+                    </div>
+                  ) : (
+                    groups.map((group) => {
+                      const isOwner =
+                        group.createdBy === currentUserId;
+
+                      return (
+                        <article
+                          className="hunting-group-item"
+                          key={group.id}
+                        >
+
+                          <div className="hunting-group-item-top">
+                            <div>
+                              <strong>{group.nom}</strong>
+                              <span>
+                                {group.members.length}{" "}
+                                {group.members.length > 1
+                                  ? "membres"
+                                  : "membre"}
+                                {isOwner
+                                  ? " • Créé par moi"
+                                  : ""}
+                              </span>
+                            </div>
+
+                            {isOwner && (
+                              <button
+                                type="button"
+                                className="hunting-group-delete"
+                                onClick={() =>
+                                  deleteGroup(group)
+                                }
+                                aria-label={`Supprimer ${group.nom}`}
+                              >
+                                <Trash2 size={17} />
+                              </button>
+                            )}
+                          </div>
+
+
+                          <div className="hunting-group-members">
+                            {group.members.length === 0 ? (
+                              <span className="hunting-groups-help">
+                                Aucun membre enregistré.
+                              </span>
+                            ) : (
+                              group.members.map((member) => (
+                                <span
+                                  className="hunting-group-member"
+                                  key={member.id}
+                                >
+                                  <UserRound size={14} />
+                                  {member.prenom}
+                                </span>
+                              ))
+                            )}
+                          </div>
+
+
+                          {isOwner && (
+                            <div className="hunting-group-manage">
+                              <small>
+                                Ajouter ou retirer des membres
+                              </small>
+
+                              <div className="hunting-groups-profile-grid">
+                                {profiles.map((profile) => {
+                                  const isMe =
+                                    profile.id === currentUserId;
+
+                                  const selected =
+                                    group.members.some(
+                                      (member) =>
+                                        member.id === profile.id
+                                    );
+
+                                  return (
+                                    <button
+                                      key={profile.id}
+                                      type="button"
+                                      className={
+                                        selected
+                                          ? "hunting-group-profile-chip selected"
+                                          : "hunting-group-profile-chip"
+                                      }
+                                      onClick={() =>
+                                        toggleExistingGroupMember(
+                                          group,
+                                          profile.id
+                                        )
+                                      }
+                                      disabled={isMe}
+                                    >
+                                      <UserRound size={15} />
+                                      {profile.prenom}
+                                      {isMe && <small>Moi</small>}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                        </article>
+                      );
+                    })
+                  )}
 
                 </div>
 
