@@ -5847,3 +5847,29 @@ span {
   }
 }
 
+
+
+/* =========================================================
+   SORTIES DE GROUPE
+   ========================================================= */
+
+.group-trip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 5px 9px;
+  border: 1px solid rgba(119, 93, 63, 0.2);
+  border-radius: 999px;
+  background: #f2ece3;
+  color: var(--brown);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.new-last-title > .group-trip-badge {
+  margin-top: 7px;
+  margin-bottom: 2px;
+}

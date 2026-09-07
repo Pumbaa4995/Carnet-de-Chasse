@@ -63,6 +63,8 @@ type HuntingTrip = {
   longitude?: number | null;
   createdBy: string | null;
   participants: UserProfile[];
+  groupId: string | null;
+  groupName: string;
   distanceKm: number;
   postedParticipants: number;
   ammunitionFired: number;
@@ -111,6 +113,7 @@ type TripForm = {
   latitude: number | null;
   longitude: number | null;
   participantIds: string[];
+  groupId: string | null;
   distanceKm: number;
   postedParticipants: number;
   ammunitionFired: number;
@@ -359,6 +362,8 @@ export default function App() {
         ? [currentUserId]
         : [],
 
+    groupId: null,
+
     distanceKm: 0,
     postedParticipants: 0,
     ammunitionFired: 0,
@@ -450,7 +455,7 @@ export default function App() {
       error,
     } = await supabase
       .from("sorties")
-      .select("*")
+      .select("*, groupes(id, nom)")
       .order("date", {
         ascending: false,
       })
@@ -555,6 +560,12 @@ export default function App() {
             participantsByTrip[
               item.id
             ] || [],
+          groupId:
+            item.groupe_id || null,
+          groupName:
+            (Array.isArray(item.groupes)
+              ? item.groupes[0]?.nom
+              : item.groupes?.nom) || "",
           distanceKm:
             Number(item.distance_km || 0),
           postedParticipants:
@@ -1363,6 +1374,9 @@ export default function App() {
             ? [currentUserId]
             : [],
 
+      groupId:
+        trip.groupId || null,
+
       distanceKm:
         trip.distanceKm || 0,
 
@@ -1687,6 +1701,8 @@ export default function App() {
         Number(form.postedParticipants || 0),
       munitions_tirees:
         Number(form.ammunitionFired || 0),
+      groupe_id:
+        form.groupId || null,
       created_by:
         currentUserId,
     };
@@ -2787,6 +2803,13 @@ export default function App() {
                         </span>
                       )}
 
+                      {trips[0].groupId && (
+                        <span className="group-trip-badge">
+                          <UserRound size={14} />
+                          Groupe · {trips[0].groupName || "Sortie de groupe"}
+                        </span>
+                      )}
+
                       <div className="new-last-meta">
                         <span>
                           <MapPin
@@ -3387,6 +3410,13 @@ export default function App() {
                               <span className="shared-trip-badge">
                                 <UserRound size={13} />
                                 Sortie partagée
+                              </span>
+                            )}
+
+                            {trip.groupId && (
+                              <span className="group-trip-badge">
+                                <UserRound size={13} />
+                                Groupe · {trip.groupName || "Sortie de groupe"}
                               </span>
                             )}
                           </div>
@@ -5571,6 +5601,47 @@ export default function App() {
                     Autre
                   </option>
                 </select>
+              </div>
+
+
+              {/* GROUPE */}
+
+              <div className="form-group">
+                <label>
+                  Groupe
+                </label>
+
+                <select
+                  value={
+                    form.groupId || ""
+                  }
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      groupId:
+                        event.target.value || null,
+                    })
+                  }
+                >
+                  <option value="">
+                    Aucun groupe
+                  </option>
+
+                  {groups.map(
+                    (group) => (
+                      <option
+                        key={group.id}
+                        value={group.id}
+                      >
+                        {group.nom}
+                      </option>
+                    )
+                  )}
+                </select>
+
+                <p className="participant-help">
+                  Facultatif. Seuls les groupes auxquels tu appartiens sont proposés.
+                </p>
               </div>
 
 
