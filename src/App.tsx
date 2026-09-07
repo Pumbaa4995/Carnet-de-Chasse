@@ -335,6 +335,11 @@ export default function App() {
     setHuntTypeFilter,
   ] = useState("Tous");
 
+  const [
+    groupFilter,
+    setGroupFilter,
+  ] = useState("all");
+
 
   /* =========================================================
      FORMULAIRE
@@ -966,13 +971,90 @@ export default function App() {
   }
 
 
+  const groupFilteredTrips =
+    useMemo(() => {
+      if (groupFilter === "individual") {
+        return trips.filter(
+          (trip) => !trip.groupId
+        );
+      }
+
+      if (groupFilter !== "all") {
+        return trips.filter(
+          (trip) =>
+            trip.groupId === groupFilter
+        );
+      }
+
+      return trips;
+    }, [trips, groupFilter]);
+
+
+  const homeTotalHarvests =
+    useMemo(() => {
+      return trips.reduce(
+        (total, trip) =>
+          total +
+          trip.harvests.reduce(
+            (sum, harvest) =>
+              sum + Number(harvest.quantity || 0),
+            0
+          ),
+        0
+      );
+    }, [trips]);
+
+
+  const homeFavoriteDog =
+    useMemo(() => {
+      const counts: Record<string, number> = {};
+
+      trips.forEach((trip) => {
+        trip.dogs.forEach((dog) => {
+          counts[dog] = (counts[dog] || 0) + 1;
+        });
+      });
+
+      const winner =
+        Object.entries(counts).sort(
+          (a, b) => b[1] - a[1]
+        )[0];
+
+      return winner
+        ? { name: winner[0], count: winner[1] }
+        : null;
+    }, [trips]);
+
+
+  const homeFavoriteTerritory =
+    useMemo(() => {
+      const counts: Record<string, number> = {};
+
+      trips.forEach((trip) => {
+        if (trip.territory) {
+          counts[trip.territory] =
+            (counts[trip.territory] || 0) + 1;
+        }
+      });
+
+      const winner =
+        Object.entries(counts).sort(
+          (a, b) => b[1] - a[1]
+        )[0];
+
+      return winner
+        ? { name: winner[0], count: winner[1] }
+        : null;
+    }, [trips]);
+
+
   /* =========================================================
      STATISTIQUES
      ========================================================= */
 
   const totalHarvests =
     useMemo(() => {
-      return trips.reduce(
+      return groupFilteredTrips.reduce(
         (total, trip) =>
           total +
           trip.harvests.reduce(
@@ -985,7 +1067,7 @@ export default function App() {
           ),
         0
       );
-    }, [trips]);
+    }, [groupFilteredTrips]);
 
 
   const favoriteDog =
@@ -995,7 +1077,7 @@ export default function App() {
         number
       > = {};
 
-      trips.forEach((trip) => {
+      groupFilteredTrips.forEach((trip) => {
         trip.dogs.forEach(
           (dog) => {
             counts[dog] =
@@ -1017,7 +1099,7 @@ export default function App() {
         name: winner[0],
         count: winner[1],
       };
-    }, [trips]);
+    }, [groupFilteredTrips]);
 
 
   const favoriteTerritory =
@@ -1027,7 +1109,7 @@ export default function App() {
         number
       > = {};
 
-      trips.forEach((trip) => {
+      groupFilteredTrips.forEach((trip) => {
         if (!trip.territory) {
           return;
         }
@@ -1051,7 +1133,7 @@ export default function App() {
         name: winner[0],
         count: winner[1],
       };
-    }, [trips]);
+    }, [groupFilteredTrips]);
 
 
   const favoriteSpecies =
@@ -1061,7 +1143,7 @@ export default function App() {
         number
       > = {};
 
-      trips.forEach((trip) => {
+      groupFilteredTrips.forEach((trip) => {
         trip.harvests.forEach(
           (harvest) => {
             counts[
@@ -1090,7 +1172,7 @@ export default function App() {
         name: winner[0],
         count: winner[1],
       };
-    }, [trips]);
+    }, [groupFilteredTrips]);
 
 
   const speciesStats =
@@ -1100,7 +1182,7 @@ export default function App() {
         number
       > = {};
 
-      trips.forEach((trip) => {
+      groupFilteredTrips.forEach((trip) => {
         trip.harvests.forEach(
           (harvest) => {
             counts[
@@ -1127,7 +1209,7 @@ export default function App() {
           (a, b) =>
             b.count - a.count
         );
-    }, [trips]);
+    }, [groupFilteredTrips]);
 
 
   const dogStats =
@@ -1137,7 +1219,7 @@ export default function App() {
         number
       > = {};
 
-      trips.forEach((trip) => {
+      groupFilteredTrips.forEach((trip) => {
         trip.dogs.forEach(
           (dog) => {
             counts[dog] =
@@ -1157,7 +1239,7 @@ export default function App() {
           (a, b) =>
             b.count - a.count
         );
-    }, [trips]);
+    }, [groupFilteredTrips]);
 
 
   const territoryStats =
@@ -1167,7 +1249,7 @@ export default function App() {
         number
       > = {};
 
-      trips.forEach((trip) => {
+      groupFilteredTrips.forEach((trip) => {
         if (!trip.territory) {
           return;
         }
@@ -1189,7 +1271,7 @@ export default function App() {
           (a, b) =>
             b.count - a.count
         );
-    }, [trips]);
+    }, [groupFilteredTrips]);
 
 
   const huntTypeStats =
@@ -1199,7 +1281,7 @@ export default function App() {
         number
       > = {};
 
-      trips.forEach((trip) => {
+      groupFilteredTrips.forEach((trip) => {
         if (!trip.huntType) {
           return;
         }
@@ -1221,37 +1303,37 @@ export default function App() {
           (a, b) =>
             b.count - a.count
         );
-    }, [trips]);
+    }, [groupFilteredTrips]);
 
 
   const totalDistanceKm =
     useMemo(() => {
-      return trips.reduce(
+      return groupFilteredTrips.reduce(
         (total, trip) =>
           total + Number(trip.distanceKm || 0),
         0
       );
-    }, [trips]);
+    }, [groupFilteredTrips]);
 
 
   const totalPostedParticipants =
     useMemo(() => {
-      return trips.reduce(
+      return groupFilteredTrips.reduce(
         (total, trip) =>
           total + Number(trip.postedParticipants || 0),
         0
       );
-    }, [trips]);
+    }, [groupFilteredTrips]);
 
 
   const totalAmmunitionFired =
     useMemo(() => {
-      return trips.reduce(
+      return groupFilteredTrips.reduce(
         (total, trip) =>
           total + Number(trip.ammunitionFired || 0),
         0
       );
-    }, [trips]);
+    }, [groupFilteredTrips]);
 
 
   const filteredTrips =
@@ -1261,7 +1343,7 @@ export default function App() {
           .trim()
           .toLowerCase();
 
-      return trips.filter(
+      return groupFilteredTrips.filter(
         (trip) => {
           const matchesType =
             huntTypeFilter ===
@@ -1298,7 +1380,7 @@ export default function App() {
         }
       );
     }, [
-      trips,
+      groupFilteredTrips,
       tripSearch,
       huntTypeFilter,
     ]);
@@ -2615,7 +2697,7 @@ export default function App() {
                   </div>
 
                   <strong>
-                    {totalHarvests}
+                    {homeTotalHarvests}
                   </strong>
 
                   <span>
@@ -2632,7 +2714,7 @@ export default function App() {
                   </div>
 
                   <strong className="new-stat-word">
-                    {favoriteDog
+                    {homeFavoriteDog
                       ?.name ||
                       "—"}
                   </strong>
@@ -2651,7 +2733,7 @@ export default function App() {
                   </div>
 
                   <strong className="new-stat-word">
-                    {favoriteTerritory
+                    {homeFavoriteTerritory
                       ?.name ||
                       "—"}
                   </strong>
@@ -3173,6 +3255,40 @@ export default function App() {
               </div>
 
 
+              {/* FILTRE PAR GROUPE */}
+
+              <div className="group-view-filter">
+                <label htmlFor="carnet-group-filter">
+                  Afficher
+                </label>
+
+                <select
+                  id="carnet-group-filter"
+                  value={groupFilter}
+                  onChange={(event) =>
+                    setGroupFilter(event.target.value)
+                  }
+                >
+                  <option value="all">
+                    Toutes les sorties
+                  </option>
+
+                  <option value="individual">
+                    Sorties individuelles
+                  </option>
+
+                  {groups.map((group) => (
+                    <option
+                      key={group.id}
+                      value={group.id}
+                    >
+                      {group.nom}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+
               {/* FILTRES */}
 
               <div className="carnet-filter-title">
@@ -3243,7 +3359,9 @@ export default function App() {
 
                 {(tripSearch ||
                   huntTypeFilter !==
-                    "Tous") && (
+                    "Tous" ||
+                  groupFilter !==
+                    "all") && (
                   <button
                     type="button"
                     onClick={() => {
@@ -3253,6 +3371,10 @@ export default function App() {
 
                       setHuntTypeFilter(
                         "Tous"
+                      );
+
+                      setGroupFilter(
+                        "all"
                       );
                     }}
                   >
@@ -4218,6 +4340,38 @@ export default function App() {
     </div>
 
 
+    <div className="group-view-filter stats-group-filter">
+      <label htmlFor="stats-group-filter">
+        Statistiques de
+      </label>
+
+      <select
+        id="stats-group-filter"
+        value={groupFilter}
+        onChange={(event) =>
+          setGroupFilter(event.target.value)
+        }
+      >
+        <option value="all">
+          Toutes les sorties
+        </option>
+
+        <option value="individual">
+          Sorties individuelles
+        </option>
+
+        {groups.map((group) => (
+          <option
+            key={group.id}
+            value={group.id}
+          >
+            {group.nom}
+          </option>
+        ))}
+      </select>
+    </div>
+
+
     {/* CHIFFRES PRINCIPAUX */}
 
     <section className="hunting-stats-main-grid">
@@ -4232,7 +4386,7 @@ export default function App() {
 
         <div>
           <strong>
-            {trips.length}
+            {groupFilteredTrips.length}
           </strong>
 
           <span>

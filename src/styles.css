@@ -5873,3 +5873,54 @@ span {
   margin-top: 7px;
   margin-bottom: 2px;
 }
+
+
+/* =========================================================
+   FILTRE CARNET / STATISTIQUES PAR GROUPE
+   ========================================================= */
+
+.group-view-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--cream);
+}
+
+.group-view-filter label {
+  flex: 0 0 auto;
+  color: var(--text-light);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.group-view-filter select {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: white;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.stats-group-filter {
+  margin-top: 4px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 520px) {
+  .group-view-filter {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .group-view-filter select {
+    width: 100%;
+  }
+}
