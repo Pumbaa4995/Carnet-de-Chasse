@@ -1078,6 +1078,69 @@ export default function App() {
     ),
   }), [selectedGroupTrips]);
 
+  const selectedGroupHighlights = useMemo(() => {
+    const territoryCounts: Record<string, number> = {};
+    const speciesCounts: Record<string, number> = {};
+    const dogCounts: Record<string, number> = {};
+    const memberTripCounts: Record<string, number> = {};
+
+    selectedGroupTrips.forEach((trip) => {
+      if (trip.territory) {
+        territoryCounts[trip.territory] =
+          (territoryCounts[trip.territory] || 0) + 1;
+      }
+
+      trip.harvests.forEach((harvest) => {
+        if (!harvest.species) {
+          return;
+        }
+
+        speciesCounts[harvest.species] =
+          (speciesCounts[harvest.species] || 0) +
+          Number(harvest.quantity || 0);
+      });
+
+      trip.dogs.forEach((dog) => {
+        if (!dog) {
+          return;
+        }
+
+        dogCounts[dog] = (dogCounts[dog] || 0) + 1;
+      });
+
+      if (trip.createdBy) {
+        memberTripCounts[trip.createdBy] =
+          (memberTripCounts[trip.createdBy] || 0) + 1;
+      }
+    });
+
+    const bestOf = (counts: Record<string, number>) => {
+      const winner = Object.entries(counts).sort(
+        (a, b) => b[1] - a[1]
+      )[0];
+
+      return winner
+        ? { name: winner[0], count: winner[1] }
+        : null;
+    };
+
+    const members = (selectedGroup?.members || [])
+      .map((member) => ({
+        ...member,
+        count: memberTripCounts[member.id] || 0,
+      }))
+      .sort((a, b) =>
+        b.count - a.count || a.prenom.localeCompare(b.prenom, "fr")
+      );
+
+    return {
+      territory: bestOf(territoryCounts),
+      species: bestOf(speciesCounts),
+      dog: bestOf(dogCounts),
+      members,
+    };
+  }, [selectedGroupTrips, selectedGroup]);
+
 
   /* =========================================================
      STATISTIQUES
@@ -5587,6 +5650,76 @@ export default function App() {
                 <span>km parcourus</span>
               </article>
               <article><strong>{selectedGroupStats.ammunition}</strong><span>Munitions</span></article>
+            </section>
+
+            <section className="hunting-group-space-section hunting-group-space-highlights-section">
+              <div className="hunting-group-space-section-title">
+                <div><span>EN UN COUP D’ŒIL</span><h2>Les favoris du groupe</h2></div>
+              </div>
+
+              <div className="hunting-group-space-highlights">
+                <article>
+                  <div className="hunting-group-space-highlight-icon"><MapPin size={19} /></div>
+                  <small>Territoire le + chassé</small>
+                  <strong>{selectedGroupHighlights.territory?.name || "—"}</strong>
+                  <span>
+                    {selectedGroupHighlights.territory
+                      ? `${selectedGroupHighlights.territory.count} sortie${selectedGroupHighlights.territory.count > 1 ? "s" : ""}`
+                      : "Aucune donnée"}
+                  </span>
+                </article>
+
+                <article>
+                  <div className="hunting-group-space-highlight-icon brown"><Target size={19} /></div>
+                  <small>Espèce la + prélevée</small>
+                  <strong>{selectedGroupHighlights.species?.name || "—"}</strong>
+                  <span>
+                    {selectedGroupHighlights.species
+                      ? `${selectedGroupHighlights.species.count} prélèvement${selectedGroupHighlights.species.count > 1 ? "s" : ""}`
+                      : "Aucune donnée"}
+                  </span>
+                </article>
+
+                <article>
+                  <div className="hunting-group-space-highlight-icon"><Dog size={19} /></div>
+                  <small>Chien le + utilisé</small>
+                  <strong>{selectedGroupHighlights.dog?.name || "—"}</strong>
+                  <span>
+                    {selectedGroupHighlights.dog
+                      ? `${selectedGroupHighlights.dog.count} sortie${selectedGroupHighlights.dog.count > 1 ? "s" : ""}`
+                      : "Aucune donnée"}
+                  </span>
+                </article>
+              </div>
+            </section>
+
+            <section className="hunting-group-space-section hunting-group-space-members-ranking-section">
+              <div className="hunting-group-space-section-title">
+                <div><span>MEMBRES</span><h2>Activité du groupe</h2></div>
+              </div>
+
+              {selectedGroupHighlights.members.length === 0 ? (
+                <div className="hunting-group-space-empty compact">
+                  <UserRound size={24} />
+                  <strong>Aucun membre</strong>
+                </div>
+              ) : (
+                <div className="hunting-group-space-member-ranking">
+                  {selectedGroupHighlights.members.map((member, index) => (
+                    <article key={member.id}>
+                      <span className="hunting-group-space-member-rank">{index + 1}</span>
+                      <div className="hunting-group-space-member-avatar">
+                        <UserRound size={17} />
+                      </div>
+                      <div className="hunting-group-space-member-rank-name">
+                        <strong>{member.prenom}</strong>
+                        <small>Sorties enregistrées</small>
+                      </div>
+                      <strong className="hunting-group-space-member-rank-count">{member.count}</strong>
+                    </article>
+                  ))}
+                </div>
+              )}
             </section>
 
             <section className="hunting-group-space-section">

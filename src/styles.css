@@ -5957,3 +5957,147 @@ span {
 .hunting-group-space-empty strong{margin-top:9px;color:var(--text)}
 .hunting-group-space-empty p{margin:5px 0 0;font-size:.8rem}
 @media(min-width:700px){.hunting-group-space-stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+
+/* =========================================================
+   ESPACE GROUPE — ÉTAPE 6
+   ========================================================= */
+
+.hunting-group-space-highlights-section,
+.hunting-group-space-members-ranking-section {
+  margin-top: 18px;
+}
+
+.hunting-group-space-highlights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hunting-group-space-highlights article {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: var(--cream);
+}
+
+.hunting-group-space-highlight-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 4px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--green-light);
+  color: var(--green-dark);
+}
+
+.hunting-group-space-highlight-icon.brown {
+  background: #f2ece3;
+  color: var(--brown);
+}
+
+.hunting-group-space-highlights small {
+  color: var(--text-light);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.hunting-group-space-highlights strong {
+  overflow: hidden;
+  color: var(--text);
+  font-family: Georgia, serif;
+  font-size: 1.05rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hunting-group-space-highlights span {
+  color: var(--text-light);
+  font-size: 0.75rem;
+}
+
+.hunting-group-space-member-ranking {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: var(--cream);
+}
+
+.hunting-group-space-member-ranking article {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hunting-group-space-member-ranking article:last-child {
+  border-bottom: 0;
+}
+
+.hunting-group-space-member-rank {
+  width: 22px;
+  color: var(--brown);
+  font-family: Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.hunting-group-space-member-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--green-light);
+  color: var(--green-dark);
+}
+
+.hunting-group-space-member-rank-name {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hunting-group-space-member-rank-name strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hunting-group-space-member-rank-name small {
+  color: var(--text-light);
+  font-size: 0.7rem;
+}
+
+.hunting-group-space-member-rank-count {
+  min-width: 28px;
+  color: var(--green-dark);
+  font-family: Georgia, serif;
+  font-size: 1.15rem;
+  text-align: right;
+}
+
+.hunting-group-space-empty.compact {
+  min-height: 110px;
+}
+
+@media (max-width: 640px) {
+  .hunting-group-space-highlights {
+    grid-template-columns: 1fr;
+  }
+
+  .hunting-group-space-highlights article {
+    min-height: 112px;
+  }
+}
