@@ -279,6 +279,9 @@ export default function App() {
   const [savingGroup, setSavingGroup] =
     useState(false);
 
+  const [selectedGroupId, setSelectedGroupId] =
+    useState<string | null>(null);
+
   const [
     loadingSettings,
     setLoadingSettings,
@@ -1046,6 +1049,34 @@ export default function App() {
         ? { name: winner[0], count: winner[1] }
         : null;
     }, [trips]);
+
+
+  const selectedGroup = useMemo(
+    () => groups.find((group) => group.id === selectedGroupId) || null,
+    [groups, selectedGroupId]
+  );
+
+  const selectedGroupTrips = useMemo(
+    () => selectedGroupId
+      ? trips.filter((trip) => trip.groupId === selectedGroupId)
+      : [],
+    [trips, selectedGroupId]
+  );
+
+  const selectedGroupStats = useMemo(() => ({
+    trips: selectedGroupTrips.length,
+    harvests: selectedGroupTrips.reduce(
+      (total, trip) => total + trip.harvests.reduce(
+        (sum, harvest) => sum + Number(harvest.quantity || 0), 0
+      ), 0
+    ),
+    distance: selectedGroupTrips.reduce(
+      (total, trip) => total + Number(trip.distanceKm || 0), 0
+    ),
+    ammunition: selectedGroupTrips.reduce(
+      (total, trip) => total + Number(trip.ammunitionFired || 0), 0
+    ),
+  }), [selectedGroupTrips]);
 
 
   /* =========================================================
@@ -5188,6 +5219,16 @@ export default function App() {
                           </div>
 
 
+                          <button
+                            type="button"
+                            className="hunting-group-open-button"
+                            onClick={() => setSelectedGroupId(group.id)}
+                          >
+                            Ouvrir l’espace groupe
+                            <ChevronRight size={17} />
+                          </button>
+
+
                           <div className="hunting-group-members">
                             {group.members.length === 0 ? (
                               <span className="hunting-groups-help">
@@ -5508,6 +5549,95 @@ export default function App() {
           )}
 
         </section>
+
+
+        {selectedGroup && (
+          <div className="hunting-group-space">
+            <div className="hunting-group-space-topbar">
+              <button type="button" className="hunting-group-space-back"
+                onClick={() => setSelectedGroupId(null)}>
+                <ChevronRight size={18} />
+                Retour
+              </button>
+              <span>Espace groupe</span>
+            </div>
+
+            <section className="hunting-group-space-hero">
+              <p>GROUPE DE CHASSE</p>
+              <h1>{selectedGroup.nom}</h1>
+              <span>
+                {selectedGroup.members.length}{" "}
+                {selectedGroup.members.length > 1 ? "membres" : "membre"}
+              </span>
+              <div className="hunting-group-space-member-list">
+                {selectedGroup.members.map((member) => (
+                  <span key={member.id} className="hunting-group-space-member">
+                    <UserRound size={14} />
+                    {member.prenom}
+                  </span>
+                ))}
+              </div>
+            </section>
+
+            <section className="hunting-group-space-stats">
+              <article><strong>{selectedGroupStats.trips}</strong><span>Sorties</span></article>
+              <article><strong>{selectedGroupStats.harvests}</strong><span>Prélèvements</span></article>
+              <article>
+                <strong>{selectedGroupStats.distance.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}</strong>
+                <span>km parcourus</span>
+              </article>
+              <article><strong>{selectedGroupStats.ammunition}</strong><span>Munitions</span></article>
+            </section>
+
+            <section className="hunting-group-space-section">
+              <div className="hunting-group-space-section-title">
+                <div><span>ACTIVITÉ</span><h2>Dernières sorties</h2></div>
+                {selectedGroupTrips.length > 0 && (
+                  <button type="button" onClick={() => {
+                    setGroupFilter(selectedGroup.id);
+                    setSelectedGroupId(null);
+                    setScreen("carnet");
+                  }}>
+                    Voir le carnet <ChevronRight size={16} />
+                  </button>
+                )}
+              </div>
+
+              {selectedGroupTrips.length === 0 ? (
+                <div className="hunting-group-space-empty">
+                  <NotebookText size={25} />
+                  <strong>Aucune sortie enregistrée</strong>
+                  <p>Les sorties associées à ce groupe apparaîtront ici.</p>
+                </div>
+              ) : (
+                <div className="hunting-group-space-trips">
+                  {selectedGroupTrips.slice(0, 5).map((trip) => (
+                    <article key={trip.id} className="hunting-group-space-trip">
+                      <div className="hunting-group-space-trip-date">
+                        <CalendarDays size={16} /> {new Date(`${trip.date}T12:00:00`).toLocaleDateString(
+                          "fr-FR",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          }
+                        )}
+                      </div>
+                      <h3>{trip.territory || "Territoire non renseigné"}</h3>
+                      <p>{trip.huntType}</p>
+                      <div className="hunting-group-space-trip-meta">
+                        <span><Target size={14} />{trip.harvests.reduce(
+                          (sum, harvest) => sum + Number(harvest.quantity || 0), 0
+                        )} prélèvement(s)</span>
+                        <span><UserRound size={14} />{trip.participants.length} participant(s)</span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
 
 
         {/* =================================================
