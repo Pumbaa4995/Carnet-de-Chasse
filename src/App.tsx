@@ -26,6 +26,8 @@ import {
   TreePine,
   UserRound,
   LogOut,
+  KeyRound,
+  ShieldCheck,
   X,
 } from "lucide-react";
 
@@ -93,6 +95,7 @@ type NamedItem = {
 type UserProfile = {
   id: string;
   prenom: string;
+  isAdmin?: boolean;
 };
 
 type HuntingGroup = {
@@ -244,6 +247,33 @@ export default function App() {
   const [authError, setAuthError] =
     useState("");
 
+  const [newPassword, setNewPassword] =
+    useState("");
+
+  const [newPasswordConfirm, setNewPasswordConfirm] =
+    useState("");
+
+  const [changingPassword, setChangingPassword] =
+    useState(false);
+
+  const [passwordMessage, setPasswordMessage] =
+    useState("");
+
+  const [resetTargetUserId, setResetTargetUserId] =
+    useState("");
+
+  const [resetPassword, setResetPassword] =
+    useState("");
+
+  const [resetPasswordConfirm, setResetPasswordConfirm] =
+    useState("");
+
+  const [resettingPassword, setResettingPassword] =
+    useState(false);
+
+  const [resetPasswordMessage, setResetPasswordMessage] =
+    useState("");
+
   const [started, setStarted] =
     useState<boolean>(() => {
       return (
@@ -303,6 +333,7 @@ export default function App() {
 
   const [photoViewerUrl, setPhotoViewerUrl] =
     useState<string | null>(null);
+
   const [
     loadingSettings,
     setLoadingSettings,
@@ -883,7 +914,7 @@ export default function App() {
       error,
     } = await supabase
       .from("profiles")
-      .select("id, prenom")
+      .select("id, prenom, is_admin")
       .eq("id", userId)
       .single();
 
@@ -896,9 +927,127 @@ export default function App() {
       return;
     }
 
-    setCurrentProfile(
-      data as UserProfile
+    setCurrentProfile({
+      id: data.id,
+      prenom: data.prenom,
+      isAdmin: data.is_admin === true,
+    });
+  }
+
+
+  async function changeOwnPassword() {
+    setPasswordMessage("");
+
+    if (newPassword.length < 6) {
+      setPasswordMessage(
+        "Le mot de passe doit contenir au moins 6 caractères."
+      );
+      return;
+    }
+
+    if (newPassword !== newPasswordConfirm) {
+      setPasswordMessage(
+        "Les deux mots de passe ne correspondent pas."
+      );
+      return;
+    }
+
+    setChangingPassword(true);
+
+    const { error } =
+      await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+    if (error) {
+      console.error(
+        "Erreur changement mot de passe :",
+        error
+      );
+      setPasswordMessage(
+        "Impossible de modifier le mot de passe."
+      );
+      setChangingPassword(false);
+      return;
+    }
+
+    setNewPassword("");
+    setNewPasswordConfirm("");
+    setPasswordMessage(
+      "Mot de passe modifié avec succès."
     );
+    setChangingPassword(false);
+  }
+
+
+  async function resetUserPassword() {
+    setResetPasswordMessage("");
+
+    if (!currentProfile?.isAdmin) {
+      setResetPasswordMessage(
+        "Accès administrateur requis."
+      );
+      return;
+    }
+
+    if (!resetTargetUserId) {
+      setResetPasswordMessage(
+        "Choisis un profil."
+      );
+      return;
+    }
+
+    if (resetPassword.length < 6) {
+      setResetPasswordMessage(
+        "Le mot de passe doit contenir au moins 6 caractères."
+      );
+      return;
+    }
+
+    if (resetPassword !== resetPasswordConfirm) {
+      setResetPasswordMessage(
+        "Les deux mots de passe ne correspondent pas."
+      );
+      return;
+    }
+
+    setResettingPassword(true);
+
+    const { error } =
+      await supabase.functions.invoke(
+        "reset-user-password",
+        {
+          body: {
+            userId: resetTargetUserId,
+            newPassword: resetPassword,
+          },
+        }
+      );
+
+    if (error) {
+      console.error(
+        "Erreur réinitialisation mot de passe :",
+        error
+      );
+      setResetPasswordMessage(
+        "Impossible de réinitialiser ce mot de passe."
+      );
+      setResettingPassword(false);
+      return;
+    }
+
+    const targetProfile = profiles.find(
+      (profile) => profile.id === resetTargetUserId
+    );
+
+    setResetPassword("");
+    setResetPasswordConfirm("");
+    setResetPasswordMessage(
+      `Mot de passe réinitialisé pour ${
+        targetProfile?.prenom || "ce profil"
+      }.`
+    );
+    setResettingPassword(false);
   }
 
 
@@ -1071,6 +1220,13 @@ export default function App() {
 
     setCurrentUserId(null);
     setCurrentProfile(null);
+    setNewPassword("");
+    setNewPasswordConfirm("");
+    setPasswordMessage("");
+    setResetTargetUserId("");
+    setResetPassword("");
+    setResetPasswordConfirm("");
+    setResetPasswordMessage("");
     setScreen("home");
   }
 
@@ -5486,6 +5642,129 @@ export default function App() {
                 </div>
 
 
+                <div className="password-settings-block">
+                  <div className="password-settings-title">
+                    <KeyRound size={18} />
+                    <div>
+                      <strong>Changer mon mot de passe</strong>
+                      <small>Au moins 6 caractères</small>
+                    </div>
+                  </div>
+
+                  <div className="password-settings-fields">
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(event) =>
+                        setNewPassword(event.target.value)
+                      }
+                      placeholder="Nouveau mot de passe"
+                      autoComplete="new-password"
+                    />
+
+                    <input
+                      type="password"
+                      value={newPasswordConfirm}
+                      onChange={(event) =>
+                        setNewPasswordConfirm(event.target.value)
+                      }
+                      placeholder="Confirmer le mot de passe"
+                      autoComplete="new-password"
+                    />
+                  </div>
+
+                  {passwordMessage && (
+                    <p className="password-settings-message">
+                      {passwordMessage}
+                    </p>
+                  )}
+
+                  <button
+                    type="button"
+                    className="password-settings-button"
+                    onClick={changeOwnPassword}
+                    disabled={changingPassword}
+                  >
+                    {changingPassword
+                      ? "Modification..."
+                      : "Modifier mon mot de passe"}
+                  </button>
+                </div>
+
+                {currentProfile?.isAdmin && (
+                  <div className="admin-password-block">
+                    <div className="password-settings-title admin-password-title">
+                      <ShieldCheck size={18} />
+                      <div>
+                        <strong>Administration des mots de passe</strong>
+                        <small>Réinitialiser le mot de passe d’un profil</small>
+                      </div>
+                    </div>
+
+                    <div className="password-settings-fields">
+                      <select
+                        value={resetTargetUserId}
+                        onChange={(event) => {
+                          setResetTargetUserId(event.target.value);
+                          setResetPasswordMessage("");
+                        }}
+                      >
+                        <option value="">Choisir un profil</option>
+                        {profiles
+                          .filter(
+                            (profile) =>
+                              profile.id !== currentUserId
+                          )
+                          .map((profile) => (
+                            <option
+                              key={profile.id}
+                              value={profile.id}
+                            >
+                              {profile.prenom}
+                            </option>
+                          ))}
+                      </select>
+
+                      <input
+                        type="password"
+                        value={resetPassword}
+                        onChange={(event) =>
+                          setResetPassword(event.target.value)
+                        }
+                        placeholder="Nouveau mot de passe"
+                        autoComplete="new-password"
+                      />
+
+                      <input
+                        type="password"
+                        value={resetPasswordConfirm}
+                        onChange={(event) =>
+                          setResetPasswordConfirm(event.target.value)
+                        }
+                        placeholder="Confirmer le mot de passe"
+                        autoComplete="new-password"
+                      />
+                    </div>
+
+                    {resetPasswordMessage && (
+                      <p className="password-settings-message">
+                        {resetPasswordMessage}
+                      </p>
+                    )}
+
+                    <button
+                      type="button"
+                      className="password-settings-button admin-reset-button"
+                      onClick={resetUserPassword}
+                      disabled={resettingPassword}
+                    >
+                      {resettingPassword
+                        ? "Réinitialisation..."
+                        : "Réinitialiser le mot de passe"}
+                    </button>
+                  </div>
+                )}
+
                 <div className="auth-profile-actions">
 
                   <button
@@ -6211,6 +6490,8 @@ export default function App() {
             />
           </div>
         )}
+
+
         {/* =================================================
             NAVIGATION BAS
             ================================================= */}
