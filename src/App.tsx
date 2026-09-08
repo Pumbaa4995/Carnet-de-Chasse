@@ -8,6 +8,7 @@ import {
   BarChart3,
   BookOpen,
   CalendarDays,
+  Camera,
   ChevronRight,
   Crosshair,
   Dog,
@@ -51,6 +52,14 @@ type Harvest = {
   quantity: number;
 };
 
+type TripPhoto = {
+  id: string;
+  sortieId: string;
+  storagePath: string;
+  createdBy: string;
+  url: string;
+};
+
 type HuntingTrip = {
   id: string;
   date: string;
@@ -68,6 +77,7 @@ type HuntingTrip = {
   distanceKm: number;
   postedParticipants: number;
   ammunitionFired: number;
+  photos: TripPhoto[];
 };
 
 type UserPosition = {
@@ -282,6 +292,17 @@ export default function App() {
   const [selectedGroupId, setSelectedGroupId] =
     useState<string | null>(null);
 
+  const [formPhotos, setFormPhotos] =
+    useState<TripPhoto[]>([]);
+
+  const [pendingPhotoFiles, setPendingPhotoFiles] =
+    useState<File[]>([]);
+
+  const [uploadingPhotos, setUploadingPhotos] =
+    useState(false);
+
+  const [photoViewerUrl, setPhotoViewerUrl] =
+    useState<string | null>(null);
   const [
     loadingSettings,
     setLoadingSettings,
@@ -426,6 +447,9 @@ export default function App() {
           setProfiles([]);
           setGroups([]);
           setNewGroupMemberIds([]);
+          setFormPhotos([]);
+          setPendingPhotoFiles([]);
+          setPhotoViewerUrl(null);
         }
       }
     );
@@ -543,6 +567,81 @@ export default function App() {
       }
     }
 
+    const photosByTrip: Record<
+      string,
+      TripPhoto[]
+    > = {};
+
+    if (tripIds.length > 0) {
+      const {
+        data: photoRows,
+        error: photoError,
+      } = await supabase
+        .from("sortie_photos")
+        .select(
+          "id, sortie_id, storage_path, created_by, created_at"
+        )
+        .in("sortie_id", tripIds)
+        .order("created_at", {
+          ascending: true,
+        });
+
+      if (photoError) {
+        console.error(
+          "Erreur chargement photos :",
+          photoError
+        );
+      } else {
+        await Promise.all(
+          (photoRows || []).map(
+            async (row: any) => {
+              const {
+                data: signedData,
+                error: signedError,
+              } = await supabase.storage
+                .from("sortie-photos")
+                .createSignedUrl(
+                  row.storage_path,
+                  60 * 60
+                );
+
+              if (
+                signedError ||
+                !signedData?.signedUrl
+              ) {
+                console.error(
+                  "Erreur URL photo :",
+                  signedError
+                );
+                return;
+              }
+
+              if (
+                !photosByTrip[row.sortie_id]
+              ) {
+                photosByTrip[
+                  row.sortie_id
+                ] = [];
+              }
+
+              photosByTrip[
+                row.sortie_id
+              ].push({
+                id: row.id,
+                sortieId: row.sortie_id,
+                storagePath:
+                  row.storage_path,
+                createdBy:
+                  row.created_by,
+                url:
+                  signedData.signedUrl,
+              });
+            }
+          )
+        );
+      }
+    }
+
     const formatted: HuntingTrip[] =
       (data || []).map(
         (item: any) => ({
@@ -580,6 +679,8 @@ export default function App() {
             Number(item.nombre_postes || 0),
           ammunitionFired:
             Number(item.munitions_tirees || 0),
+          photos:
+            photosByTrip[item.id] || [],
         })
       );
 
@@ -1496,6 +1597,8 @@ export default function App() {
 
   function newTrip() {
     setEditingTripId(null);
+    setFormPhotos([]);
+    setPendingPhotoFiles([]);
 
     setForm(
       emptyForm()
@@ -1513,6 +1616,8 @@ export default function App() {
     trip: HuntingTrip
   ) {
     setEditingTripId(trip.id);
+    setFormPhotos(trip.photos);
+    setPendingPhotoFiles([]);
 
     setForm({
       date: trip.date,
@@ -1574,6 +1679,9 @@ export default function App() {
     setShowForm(false);
 
     setEditingTripId(null);
+    setFormPhotos([]);
+    setPendingPhotoFiles([]);
+    setUploadingPhotos(false);
   }
 
 
@@ -1819,6 +1927,233 @@ export default function App() {
 
 
   /* =========================================================
+     PHOTOS DES SORTIES
+     ========================================================= */
+
+  function selectTripPhotos(
+    files: FileList | null
+  ) {
+    if (!files) {
+      return;
+    }
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
+
+    const accepted: File[] = [];
+    let rejected = false;
+
+    Array.from(files).forEach(
+      (file) => {
+        if (
+          allowedTypes.includes(file.type) &&
+          file.size <= 8 * 1024 * 1024
+        ) {
+          accepted.push(file);
+        } else {
+          rejected = true;
+        }
+      }
+    );
+
+    if (rejected) {
+      alert(
+        "Certaines photos ont été refusées. Formats acceptés : JPEG, PNG ou WebP, 8 Mo maximum par photo."
+      );
+    }
+
+    if (accepted.length > 0) {
+      setPendingPhotoFiles(
+        (current) => [
+          ...current,
+          ...accepted,
+        ]
+      );
+    }
+  }
+
+
+  function removePendingPhoto(
+    index: number
+  ) {
+    setPendingPhotoFiles(
+      (current) =>
+        current.filter(
+          (_, fileIndex) =>
+            fileIndex !== index
+        )
+    );
+  }
+
+
+  async function uploadTripPhotos(
+    sortieId: string
+  ) {
+    if (
+      !currentUserId ||
+      pendingPhotoFiles.length === 0
+    ) {
+      return true;
+    }
+
+    let allSucceeded = true;
+
+    for (
+      const file of pendingPhotoFiles
+    ) {
+      const extension =
+        file.name
+          .split(".")
+          .pop()
+          ?.toLowerCase() ||
+        (file.type === "image/png"
+          ? "png"
+          : file.type === "image/webp"
+            ? "webp"
+            : "jpg");
+
+      const storagePath =
+        `${sortieId}/${crypto.randomUUID()}.${extension}`;
+
+      const {
+        error: uploadError,
+      } = await supabase.storage
+        .from("sortie-photos")
+        .upload(
+          storagePath,
+          file,
+          {
+            contentType:
+              file.type,
+            upsert: false,
+          }
+        );
+
+      if (uploadError) {
+        console.error(
+          "Erreur envoi photo :",
+          uploadError
+        );
+        allSucceeded = false;
+        continue;
+      }
+
+      const {
+        error: photoRowError,
+      } = await supabase
+        .from("sortie_photos")
+        .insert({
+          sortie_id: sortieId,
+          storage_path:
+            storagePath,
+          created_by:
+            currentUserId,
+        });
+
+      if (photoRowError) {
+        console.error(
+          "Erreur enregistrement photo :",
+          photoRowError
+        );
+
+        await supabase.storage
+          .from("sortie-photos")
+          .remove([storagePath]);
+
+        allSucceeded = false;
+      }
+    }
+
+    return allSucceeded;
+  }
+
+
+  async function deleteTripPhoto(
+    photo: TripPhoto
+  ) {
+    if (
+      !editingTripId ||
+      !currentUserId
+    ) {
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        "Supprimer cette photo ?"
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const {
+      error: storageError,
+    } = await supabase.storage
+      .from("sortie-photos")
+      .remove([
+        photo.storagePath,
+      ]);
+
+    if (storageError) {
+      console.error(
+        "Erreur suppression fichier photo :",
+        storageError
+      );
+      alert(
+        "Impossible de supprimer cette photo."
+      );
+      return;
+    }
+
+    const {
+      error: rowError,
+    } = await supabase
+      .from("sortie_photos")
+      .delete()
+      .eq("id", photo.id);
+
+    if (rowError) {
+      console.error(
+        "Erreur suppression photo :",
+        rowError
+      );
+      alert(
+        "Le fichier a été supprimé, mais la photo n'a pas pu être retirée du carnet."
+      );
+      return;
+    }
+
+    setFormPhotos(
+      (current) =>
+        current.filter(
+          (item) =>
+            item.id !== photo.id
+        )
+    );
+
+    setTrips(
+      (current) =>
+        current.map((trip) =>
+          trip.id === editingTripId
+            ? {
+                ...trip,
+                photos:
+                  trip.photos.filter(
+                    (item) =>
+                      item.id !== photo.id
+                  ),
+              }
+            : trip
+        )
+    );
+  }
+
+
+  /* =========================================================
      SUPABASE SORTIES
      ========================================================= */
 
@@ -1984,8 +2319,28 @@ export default function App() {
       }
     }
 
+    let photosSucceeded = true;
+
+    if (
+      savedTripId &&
+      pendingPhotoFiles.length > 0
+    ) {
+      setUploadingPhotos(true);
+      photosSucceeded =
+        await uploadTripPhotos(
+          savedTripId
+        );
+      setUploadingPhotos(false);
+    }
+
     closeForm();
     await loadTrips();
+
+    if (!photosSucceeded) {
+      alert(
+        "La sortie est enregistrée, mais une ou plusieurs photos n'ont pas pu être ajoutées."
+      );
+    }
   }
 
 
@@ -3695,6 +4050,41 @@ export default function App() {
                         )}
 
                       </div>
+
+
+                      {trip.photos.length > 0 && (
+                        <div className="trip-photo-strip">
+                          {trip.photos
+                            .slice(0, 4)
+                            .map(
+                              (photo, photoIndex) => (
+                                <button
+                                  type="button"
+                                  className="trip-photo-thumb"
+                                  key={photo.id}
+                                  onClick={() =>
+                                    setPhotoViewerUrl(
+                                      photo.url
+                                    )
+                                  }
+                                  aria-label={`Voir la photo ${photoIndex + 1}`}
+                                >
+                                  <img
+                                    src={photo.url}
+                                    alt={`Photo de la sortie à ${trip.territory}`}
+                                  />
+
+                                  {photoIndex === 3 &&
+                                    trip.photos.length > 4 && (
+                                      <span>
+                                        +{trip.photos.length - 4}
+                                      </span>
+                                    )}
+                                </button>
+                              )
+                            )}
+                        </div>
+                      )}
 
 
                       {/* INFORMATIONS */}
@@ -5758,6 +6148,27 @@ export default function App() {
                       </div>
                       <h3>{trip.territory || "Territoire non renseigné"}</h3>
                       <p>{trip.huntType}</p>
+                      {trip.photos[0] && (
+                        <button
+                          type="button"
+                          className="hunting-group-space-trip-photo"
+                          onClick={() =>
+                            setPhotoViewerUrl(
+                              trip.photos[0].url
+                            )
+                          }
+                        >
+                          <img
+                            src={trip.photos[0].url}
+                            alt={`Photo de la sortie à ${trip.territory}`}
+                          />
+                          {trip.photos.length > 1 && (
+                            <span>
+                              {trip.photos.length} photos
+                            </span>
+                          )}
+                        </button>
+                      )}
                       <div className="hunting-group-space-trip-meta">
                         <span><Target size={14} />{trip.harvests.reduce(
                           (sum, harvest) => sum + Number(harvest.quantity || 0), 0
@@ -5773,6 +6184,33 @@ export default function App() {
         )}
 
 
+        {photoViewerUrl && (
+          <div
+            className="trip-photo-viewer"
+            onClick={() =>
+              setPhotoViewerUrl(null)
+            }
+          >
+            <button
+              type="button"
+              className="trip-photo-viewer-close"
+              onClick={() =>
+                setPhotoViewerUrl(null)
+              }
+              aria-label="Fermer la photo"
+            >
+              <X size={24} />
+            </button>
+
+            <img
+              src={photoViewerUrl}
+              alt="Photo de sortie"
+              onClick={(event) =>
+                event.stopPropagation()
+              }
+            />
+          </div>
+        )}
         {/* =================================================
             NAVIGATION BAS
             ================================================= */}
@@ -6483,6 +6921,110 @@ export default function App() {
               </div>
 
 
+              {/* PHOTOS */}
+
+              <div className="form-group trip-photos-form">
+                <label>
+                  Photos de la sortie
+                </label>
+
+                <p className="participant-help">
+                  JPEG, PNG ou WebP. 8 Mo maximum par photo. Les profils autorisés à voir la sortie pourront aussi voir ses photos.
+                </p>
+
+                {formPhotos.length > 0 && (
+                  <div className="trip-photo-existing-grid">
+                    {formPhotos.map(
+                      (photo) => (
+                        <div
+                          className="trip-photo-existing"
+                          key={photo.id}
+                        >
+                          <button
+                            type="button"
+                            className="trip-photo-existing-preview"
+                            onClick={() =>
+                              setPhotoViewerUrl(
+                                photo.url
+                              )
+                            }
+                          >
+                            <img
+                              src={photo.url}
+                              alt="Photo enregistrée"
+                            />
+                          </button>
+
+                          {editingTripId && (
+                            <button
+                              type="button"
+                              className="trip-photo-delete"
+                              onClick={() =>
+                                deleteTripPhoto(
+                                  photo
+                                )
+                              }
+                              aria-label="Supprimer la photo"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+
+                <label className="trip-photo-picker">
+                  <Camera size={20} />
+                  <span>
+                    Ajouter des photos
+                  </span>
+                  <input
+                    className="trip-photo-input"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    onChange={(event) => {
+                      selectTripPhotos(
+                        event.target.files
+                      );
+                      event.target.value = "";
+                    }}
+                  />
+                </label>
+
+                {pendingPhotoFiles.length > 0 && (
+                  <div className="trip-photo-pending-list">
+                    {pendingPhotoFiles.map(
+                      (file, index) => (
+                        <div
+                          className="trip-photo-pending"
+                          key={`${file.name}-${file.lastModified}-${index}`}
+                        >
+                          <Camera size={16} />
+                          <span>
+                            {file.name}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              removePendingPhoto(
+                                index
+                              )
+                            }
+                            aria-label="Retirer la photo"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+
+
               {/* NOTES */}
 
               <div className="form-group">
@@ -6534,10 +7076,15 @@ export default function App() {
                   onClick={
                     saveTrip
                   }
+                  disabled={
+                    uploadingPhotos
+                  }
                 >
-                  {editingTripId
-                    ? "Enregistrer les modifications"
-                    : "Enregistrer la sortie"}
+                  {uploadingPhotos
+                    ? "Envoi des photos..."
+                    : editingTripId
+                      ? "Enregistrer les modifications"
+                      : "Enregistrer la sortie"}
                 </button>
 
               </div>
