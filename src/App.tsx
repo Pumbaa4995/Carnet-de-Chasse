@@ -884,7 +884,9 @@ export default function App() {
   }
 
 
-  async function submitAuth() {
+  async function submitAuth(
+    createProfile = false
+  ) {
     const firstName =
       authFirstName.trim();
 
@@ -912,7 +914,10 @@ export default function App() {
     } = await supabase.functions.invoke(
       "login-by-name",
       {
-        body: { firstName },
+        body: {
+          firstName,
+          createProfile,
+        },
       }
     );
 
@@ -926,7 +931,9 @@ export default function App() {
       );
       setAuthError(
         functionData?.error ||
-          "Aucun profil trouvé avec ce prénom."
+          (createProfile
+            ? "Impossible de créer ce profil."
+            : "Aucun profil trouvé avec ce prénom.")
       );
       setAuthSubmitting(false);
       return;
@@ -2700,12 +2707,25 @@ export default function App() {
             <button
               type="button"
               className="auth-submit"
-              onClick={submitAuth}
+              onClick={() =>
+                submitAuth(false)
+              }
               disabled={authSubmitting}
             >
               {authSubmitting
                 ? "Connexion..."
                 : "Se connecter"}
+            </button>
+
+            <button
+              type="button"
+              className="auth-submit"
+              onClick={() =>
+                submitAuth(true)
+              }
+              disabled={authSubmitting}
+            >
+              Créer mon profil
             </button>
           </div>
         </section>
