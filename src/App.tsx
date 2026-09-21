@@ -26,8 +26,6 @@ import {
   TreePine,
   UserRound,
   LogOut,
-  KeyRound,
-  ShieldCheck,
   X,
 } from "lucide-react";
 
@@ -104,10 +102,6 @@ type HuntingGroup = {
   createdBy: string;
   members: UserProfile[];
 };
-
-type AuthMode =
-  | "login"
-  | "register";
 
 type Screen =
   | "home"
@@ -229,49 +223,13 @@ export default function App() {
   const [currentProfile, setCurrentProfile] =
     useState<UserProfile | null>(null);
 
-  const [authMode, setAuthMode] =
-    useState<AuthMode>("login");
-
   const [authFirstName, setAuthFirstName] =
-    useState("");
-
-  const [authPassword, setAuthPassword] =
-    useState("");
-
-  const [authPasswordConfirm, setAuthPasswordConfirm] =
     useState("");
 
   const [authSubmitting, setAuthSubmitting] =
     useState(false);
 
   const [authError, setAuthError] =
-    useState("");
-
-  const [newPassword, setNewPassword] =
-    useState("");
-
-  const [newPasswordConfirm, setNewPasswordConfirm] =
-    useState("");
-
-  const [changingPassword, setChangingPassword] =
-    useState(false);
-
-  const [passwordMessage, setPasswordMessage] =
-    useState("");
-
-  const [resetTargetUserId, setResetTargetUserId] =
-    useState("");
-
-  const [resetPassword, setResetPassword] =
-    useState("");
-
-  const [resetPasswordConfirm, setResetPasswordConfirm] =
-    useState("");
-
-  const [resettingPassword, setResettingPassword] =
-    useState(false);
-
-  const [resetPasswordMessage, setResetPasswordMessage] =
     useState("");
 
   const [started, setStarted] =
@@ -897,15 +855,6 @@ export default function App() {
   }
 
 
-  function technicalEmail(
-    firstName: string
-  ) {
-    return `${normalizeFirstName(
-      firstName
-    )}@users.carnet-chasse.app`;
-  }
-
-
   async function loadCurrentProfile(
     userId: string
   ) {
@@ -935,122 +884,6 @@ export default function App() {
   }
 
 
-  async function changeOwnPassword() {
-    setPasswordMessage("");
-
-    if (newPassword.length < 6) {
-      setPasswordMessage(
-        "Le mot de passe doit contenir au moins 6 caractères."
-      );
-      return;
-    }
-
-    if (newPassword !== newPasswordConfirm) {
-      setPasswordMessage(
-        "Les deux mots de passe ne correspondent pas."
-      );
-      return;
-    }
-
-    setChangingPassword(true);
-
-    const { error } =
-      await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-    if (error) {
-      console.error(
-        "Erreur changement mot de passe :",
-        error
-      );
-      setPasswordMessage(
-        "Impossible de modifier le mot de passe."
-      );
-      setChangingPassword(false);
-      return;
-    }
-
-    setNewPassword("");
-    setNewPasswordConfirm("");
-    setPasswordMessage(
-      "Mot de passe modifié avec succès."
-    );
-    setChangingPassword(false);
-  }
-
-
-  async function resetUserPassword() {
-    setResetPasswordMessage("");
-
-    if (!currentProfile?.isAdmin) {
-      setResetPasswordMessage(
-        "Accès administrateur requis."
-      );
-      return;
-    }
-
-    if (!resetTargetUserId) {
-      setResetPasswordMessage(
-        "Choisis un profil."
-      );
-      return;
-    }
-
-    if (resetPassword.length < 6) {
-      setResetPasswordMessage(
-        "Le mot de passe doit contenir au moins 6 caractères."
-      );
-      return;
-    }
-
-    if (resetPassword !== resetPasswordConfirm) {
-      setResetPasswordMessage(
-        "Les deux mots de passe ne correspondent pas."
-      );
-      return;
-    }
-
-    setResettingPassword(true);
-
-    const { error } =
-      await supabase.functions.invoke(
-        "reset-user-password",
-        {
-          body: {
-            userId: resetTargetUserId,
-            newPassword: resetPassword,
-          },
-        }
-      );
-
-    if (error) {
-      console.error(
-        "Erreur réinitialisation mot de passe :",
-        error
-      );
-      setResetPasswordMessage(
-        "Impossible de réinitialiser ce mot de passe."
-      );
-      setResettingPassword(false);
-      return;
-    }
-
-    const targetProfile = profiles.find(
-      (profile) => profile.id === resetTargetUserId
-    );
-
-    setResetPassword("");
-    setResetPasswordConfirm("");
-    setResetPasswordMessage(
-      `Mot de passe réinitialisé pour ${
-        targetProfile?.prenom || "ce profil"
-      }.`
-    );
-    setResettingPassword(false);
-  }
-
-
   async function submitAuth() {
     const firstName =
       authFirstName.trim();
@@ -1058,16 +891,12 @@ export default function App() {
     setAuthError("");
 
     if (!firstName) {
-      setAuthError(
-        "Indique ton prénom."
-      );
+      setAuthError("Indique ton prénom.");
       return;
     }
 
     if (
-      normalizeFirstName(
-        firstName
-      ).length < 2
+      normalizeFirstName(firstName).length < 2
     ) {
       setAuthError(
         "Le prénom doit contenir au moins 2 caractères."
@@ -1075,119 +904,54 @@ export default function App() {
       return;
     }
 
-    if (
-      authPassword.length < 6
-    ) {
-      setAuthError(
-        "Le mot de passe doit contenir au moins 6 caractères."
-      );
-      return;
-    }
-
-    if (
-      authMode === "register" &&
-      authPassword !==
-        authPasswordConfirm
-    ) {
-      setAuthError(
-        "Les deux mots de passe ne correspondent pas."
-      );
-      return;
-    }
-
     setAuthSubmitting(true);
 
-    const email =
-      technicalEmail(firstName);
+    const {
+      data: functionData,
+      error: functionError,
+    } = await supabase.functions.invoke(
+      "login-by-name",
+      {
+        body: { firstName },
+      }
+    );
 
     if (
-      authMode === "register"
+      functionError ||
+      !functionData?.tokenHash
     ) {
-      const {
-        data,
-        error,
-      } = await supabase.auth.signUp({
-        email,
-        password:
-          authPassword,
-        options: {
-          data: {
-            prenom:
-              firstName,
-            prenom_normalise:
-              normalizeFirstName(
-                firstName
-              ),
-          },
-        },
-      });
-
-      if (error) {
-        console.error(
-          "ERREUR SUPABASE :",
-          error
-        );
-
-        setAuthError(
-          `Erreur Supabase : ${error.message}`
-        );
-
-        setAuthSubmitting(false);
-        return;
-      }
-
-      if (!data.session) {
-        setAuthError(
-          "Le profil a été créé, mais Supabase demande encore une confirmation. Vérifie que « Confirm email » est bien désactivé."
-        );
-
-        setAuthSubmitting(false);
-        return;
-      }
-
-      const userId =
-        data.user?.id ||
-        data.session.user.id;
-
-      setCurrentUserId(userId);
-
-      await loadCurrentProfile(
-        userId
+      console.error(
+        "Erreur connexion par prénom :",
+        functionError || functionData
       );
-    } else {
-      const {
-        data,
-        error,
-      } =
-        await supabase.auth
-          .signInWithPassword({
-            email,
-            password:
-              authPassword,
-          });
-
-      if (error) {
-        console.error(error);
-
-        setAuthError(
-          "Prénom ou mot de passe incorrect."
-        );
-
-        setAuthSubmitting(false);
-        return;
-      }
-
-      setCurrentUserId(
-        data.user.id
+      setAuthError(
+        functionData?.error ||
+          "Aucun profil trouvé avec ce prénom."
       );
-
-      await loadCurrentProfile(
-        data.user.id
-      );
+      setAuthSubmitting(false);
+      return;
     }
 
-    setAuthPassword("");
-    setAuthPasswordConfirm("");
+    const { data, error } =
+      await supabase.auth.verifyOtp({
+        token_hash: functionData.tokenHash,
+        type: "magiclink",
+      });
+
+    if (error || !data.user) {
+      console.error(
+        "Erreur ouverture session :",
+        error
+      );
+      setAuthError(
+        "Impossible d’ouvrir ce profil."
+      );
+      setAuthSubmitting(false);
+      return;
+    }
+
+    setCurrentUserId(data.user.id);
+    await loadCurrentProfile(data.user.id);
     setAuthSubmitting(false);
   }
 
@@ -1220,13 +984,6 @@ export default function App() {
 
     setCurrentUserId(null);
     setCurrentProfile(null);
-    setNewPassword("");
-    setNewPasswordConfirm("");
-    setPasswordMessage("");
-    setResetTargetUserId("");
-    setResetPassword("");
-    setResetPasswordConfirm("");
-    setResetPasswordMessage("");
     setScreen("home");
   }
 
@@ -2888,7 +2645,6 @@ export default function App() {
     return (
       <main className="auth-screen">
         <section className="auth-card">
-
           <div className="auth-brand">
             <img
               className="auth-logo"
@@ -2901,115 +2657,39 @@ export default function App() {
             </span>
 
             <h1>
-              {authMode === "login"
-                ? "Bienvenue"
-                : "Créer mon profil"}
+              Bienvenue
             </h1>
 
             <p>
-              {authMode === "login"
-                ? "Connecte-toi simplement avec ton prénom et ton mot de passe."
-                : "Choisis un prénom unique et un mot de passe."}
+              Connecte-toi simplement avec ton prénom.
             </p>
           </div>
 
-
           <div className="auth-form">
-
             <label>
               Prénom
             </label>
 
             <div className="auth-input">
-              <UserRound
-                size={19}
-              />
+              <UserRound size={19} />
 
               <input
                 type="text"
-                autoComplete="username"
+                autoComplete="given-name"
                 placeholder="Ton prénom"
-                value={
-                  authFirstName
-                }
+                value={authFirstName}
                 onChange={(event) =>
                   setAuthFirstName(
                     event.target.value
                   )
                 }
-              />
-            </div>
-
-
-            <label>
-              Mot de passe
-            </label>
-
-            <div className="auth-input">
-              <input
-                type="password"
-                autoComplete={
-                  authMode ===
-                  "login"
-                    ? "current-password"
-                    : "new-password"
-                }
-                placeholder="Ton mot de passe"
-                value={
-                  authPassword
-                }
-                onChange={(event) =>
-                  setAuthPassword(
-                    event.target.value
-                  )
-                }
                 onKeyDown={(event) => {
-                  if (
-                    event.key ===
-                      "Enter" &&
-                    authMode ===
-                      "login"
-                  ) {
+                  if (event.key === "Enter") {
                     submitAuth();
                   }
                 }}
               />
             </div>
-
-
-            {authMode ===
-              "register" && (
-              <>
-                <label>
-                  Confirmer le mot de passe
-                </label>
-
-                <div className="auth-input">
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    placeholder="Confirme ton mot de passe"
-                    value={
-                      authPasswordConfirm
-                    }
-                    onChange={(event) =>
-                      setAuthPasswordConfirm(
-                        event.target.value
-                      )
-                    }
-                    onKeyDown={(event) => {
-                      if (
-                        event.key ===
-                        "Enter"
-                      ) {
-                        submitAuth();
-                      }
-                    }}
-                  />
-                </div>
-              </>
-            )}
-
 
             {authError && (
               <div className="auth-error">
@@ -3017,60 +2697,17 @@ export default function App() {
               </div>
             )}
 
-
             <button
               type="button"
               className="auth-submit"
-              onClick={
-                submitAuth
-              }
-              disabled={
-                authSubmitting
-              }
+              onClick={submitAuth}
+              disabled={authSubmitting}
             >
               {authSubmitting
-                ? "Patiente..."
-                : authMode ===
-                    "login"
-                  ? "Se connecter"
-                  : "Créer mon profil"}
-            </button>
-
-          </div>
-
-
-          <div className="auth-switch">
-
-            <span>
-              {authMode ===
-              "login"
-                ? "Pas encore de profil ?"
-                : "Tu as déjà un profil ?"}
-            </span>
-
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMode(
-                  authMode ===
-                    "login"
-                    ? "register"
-                    : "login"
-                );
-
-                setAuthError("");
-                setAuthPassword("");
-                setAuthPasswordConfirm("");
-              }}
-            >
-              {authMode ===
-              "login"
-                ? "Créer mon profil"
+                ? "Connexion..."
                 : "Se connecter"}
             </button>
-
           </div>
-
         </section>
       </main>
     );
@@ -5641,129 +5278,6 @@ export default function App() {
 
                 </div>
 
-
-                <div className="password-settings-block">
-                  <div className="password-settings-title">
-                    <KeyRound size={18} />
-                    <div>
-                      <strong>Changer mon mot de passe</strong>
-                      <small>Au moins 6 caractères</small>
-                    </div>
-                  </div>
-
-                  <div className="password-settings-fields">
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(event) =>
-                        setNewPassword(event.target.value)
-                      }
-                      placeholder="Nouveau mot de passe"
-                      autoComplete="new-password"
-                    />
-
-                    <input
-                      type="password"
-                      value={newPasswordConfirm}
-                      onChange={(event) =>
-                        setNewPasswordConfirm(event.target.value)
-                      }
-                      placeholder="Confirmer le mot de passe"
-                      autoComplete="new-password"
-                    />
-                  </div>
-
-                  {passwordMessage && (
-                    <p className="password-settings-message">
-                      {passwordMessage}
-                    </p>
-                  )}
-
-                  <button
-                    type="button"
-                    className="password-settings-button"
-                    onClick={changeOwnPassword}
-                    disabled={changingPassword}
-                  >
-                    {changingPassword
-                      ? "Modification..."
-                      : "Modifier mon mot de passe"}
-                  </button>
-                </div>
-
-                {currentProfile?.isAdmin && (
-                  <div className="admin-password-block">
-                    <div className="password-settings-title admin-password-title">
-                      <ShieldCheck size={18} />
-                      <div>
-                        <strong>Administration des mots de passe</strong>
-                        <small>Réinitialiser le mot de passe d’un profil</small>
-                      </div>
-                    </div>
-
-                    <div className="password-settings-fields">
-                      <select
-                        value={resetTargetUserId}
-                        onChange={(event) => {
-                          setResetTargetUserId(event.target.value);
-                          setResetPasswordMessage("");
-                        }}
-                      >
-                        <option value="">Choisir un profil</option>
-                        {profiles
-                          .filter(
-                            (profile) =>
-                              profile.id !== currentUserId
-                          )
-                          .map((profile) => (
-                            <option
-                              key={profile.id}
-                              value={profile.id}
-                            >
-                              {profile.prenom}
-                            </option>
-                          ))}
-                      </select>
-
-                      <input
-                        type="password"
-                        value={resetPassword}
-                        onChange={(event) =>
-                          setResetPassword(event.target.value)
-                        }
-                        placeholder="Nouveau mot de passe"
-                        autoComplete="new-password"
-                      />
-
-                      <input
-                        type="password"
-                        value={resetPasswordConfirm}
-                        onChange={(event) =>
-                          setResetPasswordConfirm(event.target.value)
-                        }
-                        placeholder="Confirmer le mot de passe"
-                        autoComplete="new-password"
-                      />
-                    </div>
-
-                    {resetPasswordMessage && (
-                      <p className="password-settings-message">
-                        {resetPasswordMessage}
-                      </p>
-                    )}
-
-                    <button
-                      type="button"
-                      className="password-settings-button admin-reset-button"
-                      onClick={resetUserPassword}
-                      disabled={resettingPassword}
-                    >
-                      {resettingPassword
-                        ? "Réinitialisation..."
-                        : "Réinitialiser le mot de passe"}
-                    </button>
-                  </div>
-                )}
 
                 <div className="auth-profile-actions">
 
